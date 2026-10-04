@@ -1,6 +1,6 @@
-# project_s3
+# si_kesa
 
-A new Flutter project.
+Aplikasi Android SI-KESA (Guru dan Wali Murid).
 
 ## Getting Started
 
