@@ -36,102 +36,113 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            const SiswaHeader(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Akses Cepat',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textDark,
+      body: Column(
+        children: [
+          const SiswaHeader(), // tetap di atas, tidak ikut tergulir
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Akses Cepat',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: QuickAccessCard(
-                          title: 'Riwayat Absen',
-                          subtitle: 'Lihat Riwayat Kehadiran',
-                          icon: Icons.calendar_month,
-                          cardColor: _absenBg,
-                          iconColor: AppColors.primary,
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const AbsensiSiswaScreen()),
+                    const SizedBox(height: 16),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: QuickAccessCard(
+                            title: 'Riwayat Absen',
+                            subtitle: 'Lihat Riwayat Kehadiran',
+                            icon: Icons.calendar_month,
+                            cardColor: _absenBg,
+                            iconColor: AppColors.primary,
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const AbsensiSiswaScreen(),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: QuickAccessCard(
-                          title: 'Rekap Nilai',
-                          subtitle: 'Lihat Rekap Nilai',
-                          icon: Icons.note_add,
-                          cardColor: _nilaiBg,
-                          iconColor: const Color(0xFF2E8B57),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const NilaiSiswaScreen()),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: QuickAccessCard(
+                            title: 'Rekap Nilai',
+                            subtitle: 'Lihat Rekap Nilai',
+                            icon: Icons.note_add,
+                            cardColor: _nilaiBg,
+                            iconColor: const Color(0xFF2E8B57),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const NilaiSiswaScreen(),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: QuickAccessCard(
-                          title: 'Rekap Kedisiplinan',
-                          subtitle: 'Lihat Rekap Kedisiplinan Siswa',
-                          icon: Icons.assignment,
-                          cardColor: _disiplinBg,
-                          iconColor: const Color(0xFFB88A8A),
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const DisiplinSiswaScreen()),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: QuickAccessCard(
+                            title: 'Rekap Kedisiplinan',
+                            subtitle: 'Lihat Rekap Kedisiplinan Siswa',
+                            icon: Icons.assignment,
+                            cardColor: _disiplinBg,
+                            iconColor: const Color(0xFFB88A8A),
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const DisiplinSiswaScreen(),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(child: SizedBox()), // kolom kanan kosong
-                    ],
-                  ),
-                  const SizedBox(height: 28),
-                  FutureBuilder<SiswaModel>(
-                    future: _profil,
-                    builder: (context, snap) {
-                      if (snap.connectionState != ConnectionState.done) {
-                        return const SizedBox(height: 160, child: LoadingIndicator());
-                      }
-                      if (snap.hasError) {
-                        return ErrorState(
-                          message: pesanDariError(snap.error!),
-                          onRetry: _muatUlang,
+                        const SizedBox(width: 12),
+                        const Expanded(child: SizedBox()), // kolom kanan kosong
+                      ],
+                    ),
+                    const SizedBox(height: 28),
+                    FutureBuilder<SiswaModel>(
+                      future: _profil,
+                      builder: (context, snap) {
+                        if (snap.connectionState != ConnectionState.done) {
+                          return const SizedBox(
+                            height: 160,
+                            child: LoadingIndicator(),
+                          );
+                        }
+                        if (snap.hasError) {
+                          return ErrorState(
+                            message: pesanDariError(snap.error!),
+                            onRetry: _muatUlang,
+                          );
+                        }
+                        final s = snap.data!;
+                        return SiswaDataCard(
+                          nama: s.nama,
+                          kelas: s.namaKelas,
+                          nisn: s.nisn,
+                          status: 'Aktif',
+                          waliKelas: s.namaWaliKelas,
                         );
-                      }
-                      final s = snap.data!;
-                      return SiswaDataCard(
-                        nama: s.nama,
-                        kelas: s.namaKelas,
-                        nisn: s.nisn,
-                        status: 'Aktif',
-                        waliKelas: s.namaWaliKelas,
-                      );
-                    },
-                  ),
-                ],
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
