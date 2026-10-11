@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/nilai_model.dart';
+import 'package:si_kesa/services/api_client.dart';
+import 'package:si_kesa/services/wali_service.dart';
+import 'package:si_kesa/widgets/error_state.dart';
+import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class NilaiSiswaScreen extends StatefulWidget {
@@ -11,21 +15,20 @@ class NilaiSiswaScreen extends StatefulWidget {
 }
 
 class _NilaiSiswaScreenState extends State<NilaiSiswaScreen> {
-  int _tab = 0; // 0 = UH, 1 = UTS, 2 = UAS
+  int _tab = 0; // 0 = UH, 1 = ASTS, 2 = ASAS
 
-  static const _tabLabel = ['UH', 'UTS', 'UAS'];
+  static const _tabLabel = ['UH', 'ASTS', 'ASAS'];
   static const double _lebarKolom = 58;
 
-  // Data dummy sementara. Nanti diganti data dari backend.
-  static const List<NilaiMapel> _data = [
-    NilaiMapel(mapel: 'Matematika', uh: [90, 90, 90], uts: 88, uas: 90),
-    NilaiMapel(mapel: 'Bahasa Indonesia', uh: [80, 80, 80], uts: 82, uas: 85),
-    NilaiMapel(mapel: 'IPA', uh: [88, 88, 88], uts: 85, uas: 87),
-    NilaiMapel(mapel: 'IPS', uh: [77, 77, 77], uts: 75, uas: 80),
-    NilaiMapel(mapel: 'Bahasa Inggris', uh: [60, 60, 60], uts: 65, uas: 70),
-    NilaiMapel(mapel: 'PJOK', uh: [60, 60, 60], uts: 78, uas: 80),
-    NilaiMapel(mapel: 'Seni Budaya', uh: [95, 95, 95], uts: 90, uas: 92),
-  ];
+  late Future<NilaiResult> _future = WaliService.nilai();
+  String? _semester; // null = ikut semester_aktif dari server
+  List<NilaiMapel> _data = const []; // nilai pada semester yang dipilih
+
+  void _muatUlang() {
+    setState(() {
+      _future = WaliService.nilai();
+    });
+  }
 
   // Jumlah kolom UH mengikuti data terpanjang
   int get _jumlahUh => _data.fold<int>(
@@ -38,9 +41,9 @@ class _NilaiSiswaScreenState extends State<NilaiSiswaScreen> {
       case 0:
         return List.generate(_jumlahUh, (i) => 'UH-${i + 1}');
       case 1:
-        return ['UTS'];
+        return ['ASTS'];
       default:
-        return ['UAS'];
+        return ['ASAS'];
     }
   }
 
@@ -52,9 +55,9 @@ class _NilaiSiswaScreenState extends State<NilaiSiswaScreen> {
           (i) => i < m.uh.length ? m.uh[i] : null,
         );
       case 1:
-        return [m.uts];
+        return [m.asts];
       default:
-        return [m.uas];
+        return [m.asas];
     }
   }
 
@@ -65,28 +68,70 @@ class _NilaiSiswaScreenState extends State<NilaiSiswaScreen> {
         children: [
           const SubPageHeader(title: 'Rekap Nilai'),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-              children: [
-                _tabBar(),
-                const SizedBox(height: 22),
-                if (_data.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 48),
-                    child: Center(
-                      child: Text(
-                        'Belum ada nilai.',
-                        style: TextStyle(color: AppColors.textMuted),
-                      ),
-                    ),
-                  )
-                else
-                  _tabel(),
-              ],
+            child: FutureBuilder<NilaiResult>(
+              future: _future,
+              builder: (context, snap) {
+                if (snap.connectionState != ConnectionState.done) {
+                  return const LoadingIndicator();
+                }
+                if (snap.hasError) {
+                  return ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang);
+                }
+                final hasil = snap.data!;
+                _semester ??= hasil.semesterAktif;
+                _data = hasil.items.where((m) => m.semester == _semester).toList();
+
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                  children: [
+                    _pilihSemester(hasil.tahunAjaran),
+                    const SizedBox(height: 18),
+                    _tabBar(),
+                    const SizedBox(height: 22),
+                    if (_data.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 48),
+                        child: Center(
+                          child: Text(
+                            'Belum ada nilai.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        ),
+                      )
+                    else
+                      _tabel(),
+                  ],
+                );
+              },
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _pilihSemester(String tahunAjaran) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Tahun Ajaran $tahunAjaran',
+          style: const TextStyle(fontSize: 13, color: AppColors.textHint),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<String>(
+            showSelectedIcon: false,
+            segments: const [
+              ButtonSegment(value: 'ganjil', label: Text('Semester Ganjil')),
+              ButtonSegment(value: 'genap', label: Text('Semester Genap')),
+            ],
+            selected: {_semester ?? 'ganjil'},
+            onSelectionChanged: (s) => setState(() => _semester = s.first),
+          ),
+        ),
+      ],
     );
   }
 

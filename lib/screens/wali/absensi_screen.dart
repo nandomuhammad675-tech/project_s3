@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/absensi_model.dart';
+import 'package:si_kesa/models/siswa_model.dart';
+import 'package:si_kesa/services/api_client.dart';
+import 'package:si_kesa/services/wali_service.dart';
 import 'package:si_kesa/utils/date_formatter.dart';
+import 'package:si_kesa/widgets/error_state.dart';
+import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class AbsensiSiswaScreen extends StatefulWidget {
@@ -13,127 +18,149 @@ class AbsensiSiswaScreen extends StatefulWidget {
 }
 
 class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
-  // Data dummy sementara
-  static const _nama = 'Aji Ariya';
-  static const _kelas = '6A';
+  late Future<_Data> _future = _muat();
+  DateTime? _bulanDipilih;
 
-  final _bulanList = [DateTime(2026, 8), DateTime(2026, 9)];
-  DateTime _bulanDipilih = DateTime(2026, 9);
+  Future<_Data> _muat() async {
+    final profil = await WaliService.profil();
+    final absensi = await WaliService.absensi();
+    return _Data(profil, absensi.items);
+  }
 
-  final _semua = [
-    AbsensiModel(tanggal: DateTime(2026, 9, 1), status: StatusKehadiran.sakit),
-    AbsensiModel(tanggal: DateTime(2026, 9, 7), status: StatusKehadiran.izin),
-    AbsensiModel(tanggal: DateTime(2026, 9, 15), status: StatusKehadiran.alfa),
-    AbsensiModel(tanggal: DateTime(2026, 9, 16), status: StatusKehadiran.sakit),
-    AbsensiModel(tanggal: DateTime(2026, 9, 21), status: StatusKehadiran.izin),
-    AbsensiModel(tanggal: DateTime(2026, 9, 22), status: StatusKehadiran.sakit),
-    AbsensiModel(tanggal: DateTime(2026, 9, 25), status: StatusKehadiran.izin),
-    AbsensiModel(tanggal: DateTime(2026, 9, 29), status: StatusKehadiran.sakit),
-    AbsensiModel(tanggal: DateTime(2026, 8, 10), status: StatusKehadiran.sakit),
-    AbsensiModel(tanggal: DateTime(2026, 8, 18), status: StatusKehadiran.alfa),
-  ];
+  void _muatUlang() {
+    setState(() {
+      _bulanDipilih = null;
+      _future = _muat();
+    });
+  }
 
-  List<AbsensiModel> get _bulanIni {
-    final list = _semua
-        .where((a) =>
-            a.tanggal.year == _bulanDipilih.year &&
-            a.tanggal.month == _bulanDipilih.month)
+  // Bulan yang punya data, urut dari lama ke baru
+  static List<DateTime> _daftarBulan(List<AbsensiModel> items) {
+    final set = <DateTime>{
+      for (final a in items) DateTime(a.tanggal.year, a.tanggal.month),
+    };
+    return set.toList()..sort();
+  }
+
+  List<AbsensiModel> _bulanIni(List<AbsensiModel> items) {
+    final b = _bulanDipilih;
+    if (b == null) return const [];
+    final list = items
+        .where((a) => a.tanggal.year == b.year && a.tanggal.month == b.month)
         .toList();
-    list.sort((a, b) => b.tanggal.compareTo(a.tanggal)); // terbaru di atas
+    list.sort((x, y) => y.tanggal.compareTo(x.tanggal)); // terbaru di atas
     return list;
   }
 
-  int _hitung(StatusKehadiran s) =>
-      _bulanIni.where((a) => a.status == s).length;
+  int _hitung(List<AbsensiModel> data, StatusKehadiran s) =>
+      data.where((a) => a.status == s).length;
 
-  String get _initials {
-    final parts = _nama.trim().split(RegExp(r'\s+'));
-    final second = parts.length > 1 ? parts[1][0] : '';
-    return (parts[0][0] + second).toUpperCase();
+  static String _initials(String nama) {
+    final parts = nama.trim().split(RegExp(r'\s+'));
+    final first = parts.isNotEmpty && parts[0].isNotEmpty ? parts[0][0] : '';
+    final second = parts.length > 1 && parts[1].isNotEmpty ? parts[1][0] : '';
+    return (first + second).toUpperCase();
   }
 
   static String _label(StatusKehadiran s) => switch (s) {
         StatusKehadiran.hadir => 'Hadir',
         StatusKehadiran.sakit => 'Sakit',
         StatusKehadiran.izin => 'Izin',
-        StatusKehadiran.alfa => 'Alfa',
+        StatusKehadiran.alpa => 'Alpa',
       };
 
   static Color _warna(StatusKehadiran s) => switch (s) {
         StatusKehadiran.hadir => const Color(0xFF2E8B57),
         StatusKehadiran.sakit => const Color(0xFF4B5A2F),
         StatusKehadiran.izin => const Color(0xFFB8A12A),
-        StatusKehadiran.alfa => const Color(0xFFE00000),
+        StatusKehadiran.alpa => const Color(0xFFE00000),
       };
 
   @override
   Widget build(BuildContext context) {
-    final data = _bulanIni;
-
     return Scaffold(
       body: Column(
         children: [
           SubPageHeader(title: 'Riwayat Absen', showBack: widget.showBack),
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-              children: [
-                _kartuSiswa(),
-                const SizedBox(height: 24),
-                const Text(
-                  'Bulan',
-                  style: TextStyle(fontSize: 13, color: AppColors.textHint),
-                ),
-                const SizedBox(height: 8),
-                _pilihBulan(),
-                const SizedBox(height: 20),
-                Row(
+            child: FutureBuilder<_Data>(
+              future: _future,
+              builder: (context, snap) {
+                if (snap.connectionState != ConnectionState.done) {
+                  return const LoadingIndicator();
+                }
+                if (snap.hasError) {
+                  return ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang);
+                }
+                final d = snap.data!;
+                final bulanList = _daftarBulan(d.items);
+                if (_bulanDipilih == null || !bulanList.contains(_bulanDipilih)) {
+                  _bulanDipilih = bulanList.isEmpty ? null : bulanList.last;
+                }
+                final data = _bulanIni(d.items);
+
+                return ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                   children: [
-                    _kotakRingkasan(
-                      _hitung(StatusKehadiran.sakit),
-                      'Sakit',
-                      const Color(0xFFFBE6D8),
-                      _warna(StatusKehadiran.sakit),
-                    ),
-                    const SizedBox(width: 12),
-                    _kotakRingkasan(
-                      _hitung(StatusKehadiran.izin),
-                      'Izin',
-                      const Color(0xFFFAEBD5),
-                      _warna(StatusKehadiran.izin),
-                    ),
-                    const SizedBox(width: 12),
-                    _kotakRingkasan(
-                      _hitung(StatusKehadiran.alfa),
-                      'Alfa',
-                      const Color(0xFFFDE0E0),
-                      _warna(StatusKehadiran.alfa),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Rincian Kehadiran',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.headerGreen,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (data.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: Text(
-                        'Belum ada data absensi.',
-                        style: TextStyle(color: AppColors.textMuted),
+                    _kartuSiswa(d.siswa),
+                    const SizedBox(height: 24),
+                    if (bulanList.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 32),
+                        child: Center(
+                          child: Text(
+                            'Belum ada data absensi.',
+                            style: TextStyle(color: AppColors.textMuted),
+                          ),
+                        ),
+                      )
+                    else ...[
+                      const Text(
+                        'Bulan',
+                        style: TextStyle(fontSize: 13, color: AppColors.textHint),
                       ),
-                    ),
-                  )
-                else
-                  ...data.map(_itemRincian),
-              ],
+                      const SizedBox(height: 8),
+                      _pilihBulan(bulanList),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          _kotakRingkasan(
+                            _hitung(data, StatusKehadiran.sakit),
+                            'Sakit',
+                            const Color(0xFFFBE6D8),
+                            _warna(StatusKehadiran.sakit),
+                          ),
+                          const SizedBox(width: 12),
+                          _kotakRingkasan(
+                            _hitung(data, StatusKehadiran.izin),
+                            'Izin',
+                            const Color(0xFFFAEBD5),
+                            _warna(StatusKehadiran.izin),
+                          ),
+                          const SizedBox(width: 12),
+                          _kotakRingkasan(
+                            _hitung(data, StatusKehadiran.alpa),
+                            'Alpa',
+                            const Color(0xFFFDE0E0),
+                            _warna(StatusKehadiran.alpa),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Rincian Kehadiran',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.headerGreen,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      ...data.map((a) => _itemRincian(d.siswa.nama, a)),
+                    ],
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -141,7 +168,7 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
     );
   }
 
-  Widget _kartuSiswa() {
+  Widget _kartuSiswa(SiswaModel s) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -161,7 +188,7 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
               border: Border.all(color: AppColors.primary, width: 2),
             ),
             child: Text(
-              _initials,
+              _initials(s.nama),
               style: const TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.w500,
@@ -173,12 +200,12 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 Text(
-                  _nama,
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  s.nama,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                 ),
-                Text('Kelas $_kelas', style: TextStyle(fontSize: 13)),
+                Text('Kelas ${s.namaKelas}', style: const TextStyle(fontSize: 13)),
               ],
             ),
           ),
@@ -187,7 +214,7 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
     );
   }
 
-  Widget _pilihBulan() {
+  Widget _pilihBulan(List<DateTime> bulanList) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
@@ -205,7 +232,7 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
             fontWeight: FontWeight.w500,
             color: AppColors.textHint,
           ),
-          items: _bulanList
+          items: bulanList
               .map(
                 (b) => DropdownMenuItem(
                   value: b,
@@ -263,7 +290,7 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
     );
   }
 
-  Widget _itemRincian(AbsensiModel a) {
+  Widget _itemRincian(String nama, AbsensiModel a) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(16),
@@ -279,9 +306,9 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  _nama,
-                  style: TextStyle(
+                Text(
+                  nama,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: AppColors.textHint,
@@ -310,4 +337,10 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
       ),
     );
   }
+}
+
+class _Data {
+  final SiswaModel siswa;
+  final List<AbsensiModel> items;
+  const _Data(this.siswa, this.items);
 }
