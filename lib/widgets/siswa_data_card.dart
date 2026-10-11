@@ -6,7 +6,7 @@ class SiswaDataCard extends StatelessWidget {
   final String kelas;
   final String nisn;
   final String status;
-  final String waliKelas;
+  final String? waliKelas; // null = baris disembunyikan
 
   const SiswaDataCard({
     super.key,
@@ -14,7 +14,7 @@ class SiswaDataCard extends StatelessWidget {
     required this.kelas,
     required this.nisn,
     required this.status,
-    required this.waliKelas,
+    this.waliKelas,
   });
 
   // Inisial dari dua kata pertama nama, misal "Aji Ariya" -> "AA"
@@ -133,7 +133,7 @@ class SiswaDataCard extends StatelessWidget {
                 const SizedBox(height: 16),
                 _row('NISN', nisn),
                 _row('Status', status),
-                _row('Wali Kelas', waliKelas),
+                if (waliKelas != null) _row('Wali Kelas', waliKelas!),
               ],
             ),
           ),

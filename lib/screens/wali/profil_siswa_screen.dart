@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:si_kesa/config/theme_config.dart';
+import 'package:si_kesa/models/siswa_model.dart';
 import 'package:si_kesa/screens/auth/login_screen.dart';
+import 'package:si_kesa/services/api_client.dart';
+import 'package:si_kesa/services/auth_service.dart';
+import 'package:si_kesa/services/wali_service.dart';
+import 'package:si_kesa/widgets/error_state.dart';
+import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class ProfilSiswaScreen extends StatefulWidget {
@@ -11,13 +17,14 @@ class ProfilSiswaScreen extends StatefulWidget {
 }
 
 class _ProfilSiswaScreenState extends State<ProfilSiswaScreen> {
-  // Data dummy sementara. Nanti diganti data dari backend.
-  static const _nama = 'Aji Ariya';
-  static const _nisn = '0087654321';
-  static const _kelas = '6A';
-  static const _sandi = '123456';
-
+  late Future<SiswaModel> _profil = WaliService.profil();
   bool _tampilSandi = false;
+
+  void _muatUlang() {
+    setState(() {
+      _profil = WaliService.profil(refresh: true);
+    });
+  }
 
   Future<void> _keluar() async {
     // Konfirmasi dulu (sesuai dokumen)
@@ -42,9 +49,9 @@ class _ProfilSiswaScreenState extends State<ProfilSiswaScreen> {
       ),
     );
 
-    if (yakin != true || !mounted) return;
-
-    // Nanti di sini juga hapus token yang tersimpan
+    if (yakin != true) return;
+    await AuthService.keluar(); // hapus token tersimpan
+    if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
@@ -58,49 +65,63 @@ class _ProfilSiswaScreenState extends State<ProfilSiswaScreen> {
         children: [
           const SubPageHeader(title: 'Profil Akun'),
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(child: _avatar()),
-                  const SizedBox(height: 12),
-                  const Center(
-                    child: Text(
-                      _nama,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textHint,
+            child: FutureBuilder<SiswaModel>(
+              future: _profil,
+              builder: (context, snap) {
+                if (snap.connectionState != ConnectionState.done) {
+                  return const LoadingIndicator();
+                }
+                if (snap.hasError) {
+                  return ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang);
+                }
+                final s = snap.data!;
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(child: _avatar()),
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Text(
+                          s.nama,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textHint,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-                  _label('NISN'),
-                  _kolom(_nisn),
-                  const SizedBox(height: 14),
-                  _label('Kelas'),
-                  _kolom(_kelas),
-                  const SizedBox(height: 14),
-                  _label('Kata Sandi'),
-                  _kolom(
-                    _tampilSandi ? _sandi : '*' * _sandi.length,
-                    akhir: IconButton(
-                      icon: Icon(
-                        _tampilSandi
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                        color: AppColors.textDark,
+                      const SizedBox(height: 28),
+                      _label('NISN'),
+                      _kolom(s.nisn),
+                      const SizedBox(height: 14),
+                      _label('Kelas'),
+                      _kolom(s.namaKelas),
+                      const SizedBox(height: 14),
+                      _label('Kata Sandi'),
+                      // Kata sandi tampilan = NISN (keputusan sekolah; bukan password tersimpan di server)
+                      _kolom(
+                        _tampilSandi ? s.nisn : '*' * s.nisn.length,
+                        akhir: IconButton(
+                          icon: Icon(
+                            _tampilSandi
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            color: AppColors.textDark,
+                          ),
+                          onPressed: () =>
+                              setState(() => _tampilSandi = !_tampilSandi),
+                        ),
                       ),
-                      onPressed: () =>
-                          setState(() => _tampilSandi = !_tampilSandi),
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              },
             ),
           ),
-          // Tombol Keluar Akun menempel di bawah
+          // Tombol Keluar Akun menempel di bawah (tetap tersedia walau data gagal dimuat)
           SafeArea(
             top: false,
             child: Padding(
