@@ -18,11 +18,12 @@ class SiswaDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
+      body: Column(
           children: [
             const SiswaHeader(),
-            Padding(
+            Expanded(
+              child: SingleChildScrollView(
+            child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,12 +94,13 @@ class SiswaDashboardScreen extends StatelessWidget {
                     nisn: '0087654321',
                     status: 'Aktif',
                     waliKelas: 'Lestari, S.Pd., M.Pd.',
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
