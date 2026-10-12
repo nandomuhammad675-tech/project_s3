@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:si_kesa/config/theme_config.dart';
-import 'package:si_kesa/screens/wali/dashboard_screen.dart';
-import 'package:si_kesa/widgets/siswa_bottom_nav.dart';
 import 'package:si_kesa/screens/wali/absensi_screen.dart';
+import 'package:si_kesa/screens/wali/dashboard_screen.dart';
 import 'package:si_kesa/screens/wali/disiplin_screen.dart';
+import 'package:si_kesa/screens/wali/nilai_screen.dart';
 import 'package:si_kesa/screens/wali/profil_siswa_screen.dart';
+import 'package:si_kesa/widgets/siswa_bottom_nav.dart';
 
+/// Cangkang Wali Murid: semua halaman utama ada di sini sehingga
+/// bottom nav (footer) selalu tampil. Urutan: Home, Nilai, Absen, Disiplin, Profil.
 class SiswaMainScreen extends StatefulWidget {
   const SiswaMainScreen({super.key});
 
@@ -15,57 +17,46 @@ class SiswaMainScreen extends StatefulWidget {
 
 class _SiswaMainScreenState extends State<SiswaMainScreen> {
   int _index = 0;
+  final Set<int> _dibuka = {0}; // tab dimuat saat pertama dibuka
 
-  // Tab selain Home masih placeholder, diganti saat layarnya dibuat
-  late final List<Widget> _pages = [
-    const SiswaDashboardScreen(),
-    const _Placeholder('Kedisiplinan'),
-    const SizedBox.shrink(),
-    const _Placeholder('Profil'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(index: _index, children: _pages),
-            bottomNavigationBar: SiswaBottomNav(
-        currentIndex: _index,
-                        onTap: (i) {
-          if (i == 1) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const DisiplinSiswaScreen()),
-            );
-            return;
-          }
-          if (i == 2) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const AbsensiSiswaScreen()),
-            );
-            return;
-          }
-          if (i == 3) {
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const ProfilSiswaScreen()),
-            );
-            return;
-          }
-          setState(() => _index = i);
-        },
-      ),
-    );
+  Widget _halaman(int i) {
+    if (!_dibuka.contains(i)) return const SizedBox.shrink();
+    switch (i) {
+      case 0:
+        return SiswaDashboardScreen(onBukaTab: _pindah);
+      case 1:
+        return const NilaiSiswaScreen(showBack: false);
+      case 2:
+        return const AbsensiSiswaScreen(showBack: false);
+      case 3:
+        return const DisiplinSiswaScreen(showBack: false);
+      default:
+        return const ProfilSiswaScreen(showBack: false);
+    }
   }
-}
 
-class _Placeholder extends StatelessWidget {
-  final String title;
-  const _Placeholder(this.title);
+  void _pindah(int i) => setState(() {
+        _dibuka.add(i);
+        _index = i;
+      });
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text(
-        'Halaman $title',
-        style: const TextStyle(fontSize: 18, color: AppColors.textDark),
+    return PopScope(
+      canPop: _index == 0,
+      // Tombol kembali HP: dari tab lain ke Home dulu
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _pindah(0);
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _index,
+          children: List.generate(5, _halaman),
+        ),
+        bottomNavigationBar: SiswaBottomNav(
+          currentIndex: _index,
+          onTap: _pindah,
+        ),
       ),
     );
   }

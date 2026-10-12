@@ -10,7 +10,8 @@ import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class ProfilSiswaScreen extends StatefulWidget {
-  const ProfilSiswaScreen({super.key});
+  final bool showBack;
+  const ProfilSiswaScreen({super.key, this.showBack = true});
 
   @override
   State<ProfilSiswaScreen> createState() => _ProfilSiswaScreenState();
@@ -63,7 +64,7 @@ class _ProfilSiswaScreenState extends State<ProfilSiswaScreen> {
     return Scaffold(
       body: Column(
         children: [
-          const SubPageHeader(title: 'Profil Akun'),
+          SubPageHeader(title: 'Profil Akun', showBack: widget.showBack),
           Expanded(
             child: FutureBuilder<SiswaModel>(
               future: _profil,

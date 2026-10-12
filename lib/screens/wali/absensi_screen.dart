@@ -7,6 +7,7 @@ import 'package:si_kesa/services/wali_service.dart';
 import 'package:si_kesa/utils/date_formatter.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
+import 'package:si_kesa/widgets/semester_toggle.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class AbsensiSiswaScreen extends StatefulWidget {
@@ -20,16 +21,18 @@ class AbsensiSiswaScreen extends StatefulWidget {
 class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
   late Future<_Data> _future = _muat();
   DateTime? _bulanDipilih;
+  String? _semester; // null = ikut semester berjalan
 
   Future<_Data> _muat() async {
     final profil = await WaliService.profil();
     final absensi = await WaliService.absensi();
-    return _Data(profil, absensi.items);
+    return _Data(profil, absensi.items, absensi.tahunAjaran, absensi.semesterAktif);
   }
 
   void _muatUlang() {
     setState(() {
       _bulanDipilih = null;
+      _semester = null;
       _future = _muat();
     });
   }
@@ -93,23 +96,36 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
                   return ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang);
                 }
                 final d = snap.data!;
-                final bulanList = _daftarBulan(d.items);
+                _semester ??= d.semesterAktif;
+                final itemSemester =
+                    d.items.where((a) => a.semester == _semester).toList();
+                final bulanList = _daftarBulan(itemSemester);
                 if (_bulanDipilih == null || !bulanList.contains(_bulanDipilih)) {
                   _bulanDipilih = bulanList.isEmpty ? null : bulanList.last;
                 }
-                final data = _bulanIni(d.items);
+                final data = _bulanIni(itemSemester);
 
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
                   children: [
                     _kartuSiswa(d.siswa),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    SemesterToggle(
+                      tahunAjaran: d.tahunAjaran,
+                      semester: _semester!,
+                      semesterAktif: d.semesterAktif,
+                      onChanged: (v) => setState(() {
+                        _semester = v;
+                        _bulanDipilih = null; // bulan dipilih ulang per semester
+                      }),
+                    ),
+                    const SizedBox(height: 20),
                     if (bulanList.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 32),
                         child: Center(
                           child: Text(
-                            'Belum ada data absensi.',
+                            'Belum ada data absensi pada semester ini.',
                             style: TextStyle(color: AppColors.textMuted),
                           ),
                         ),
@@ -342,5 +358,7 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
 class _Data {
   final SiswaModel siswa;
   final List<AbsensiModel> items;
-  const _Data(this.siswa, this.items);
+  final String tahunAjaran;
+  final String semesterAktif;
+  const _Data(this.siswa, this.items, this.tahunAjaran, this.semesterAktif);
 }

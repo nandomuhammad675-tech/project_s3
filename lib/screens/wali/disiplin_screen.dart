@@ -9,7 +9,8 @@ import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class DisiplinSiswaScreen extends StatefulWidget {
-  const DisiplinSiswaScreen({super.key});
+  final bool showBack;
+  const DisiplinSiswaScreen({super.key, this.showBack = true});
 
   @override
   State<DisiplinSiswaScreen> createState() => _DisiplinSiswaScreenState();
@@ -35,7 +36,7 @@ class _DisiplinSiswaScreenState extends State<DisiplinSiswaScreen> {
     return Scaffold(
       body: Column(
         children: [
-          const SubPageHeader(title: 'Rekap Kedisiplinan'),
+          SubPageHeader(title: 'Rekap Kedisiplinan', showBack: widget.showBack),
           Expanded(
             child: FutureBuilder<_Data>(
               future: _future,

@@ -4,13 +4,21 @@ enum StatusKehadiran { hadir, sakit, izin, alpa }
 class AbsensiModel {
   final DateTime tanggal;
   final StatusKehadiran status;
+  final String semester; // 'ganjil' | 'genap'
 
-  const AbsensiModel({required this.tanggal, required this.status});
+  const AbsensiModel({
+    required this.tanggal,
+    required this.status,
+    required this.semester,
+  });
 
   factory AbsensiModel.fromJson(Map<String, dynamic> j) {
     final s = j['status'] as String;
+    final tgl = DateTime.parse(j['tanggal'] as String);
     return AbsensiModel(
-      tanggal: DateTime.parse(j['tanggal'] as String),
+      tanggal: tgl,
+      // cadangan bila server tidak mengirim semester: Jul-Des ganjil, Jan-Jun genap
+      semester: (j['semester'] as String?) ?? (tgl.month >= 7 ? 'ganjil' : 'genap'),
       status: StatusKehadiran.values.firstWhere(
         (e) => e.name == s,
         orElse: () => throw FormatException('Status absensi tidak dikenal: $s'),

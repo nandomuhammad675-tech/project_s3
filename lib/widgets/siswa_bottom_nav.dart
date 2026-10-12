@@ -13,8 +13,9 @@ class SiswaBottomNav extends StatelessWidget {
 
   static const _items = [
     (Icons.home_rounded, 'Home'),
-    (Icons.pending_actions, 'Kedisiplinan'),
+    (Icons.grade_rounded, 'Nilai'),
     (Icons.fact_check, 'Absen'),
+    (Icons.pending_actions, 'Disiplin'),
     (Icons.person, 'Profil'),
   ];
 
@@ -36,7 +37,7 @@ class SiswaBottomNav extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(_items[i].$1, color: color, size: 28),
+                      Icon(_items[i].$1, color: color, size: 26),
                       const SizedBox(height: 2),
                       Text(
                         _items[i].$2,

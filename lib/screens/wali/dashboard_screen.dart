@@ -8,12 +8,11 @@ import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/quick_access_card.dart';
 import 'package:si_kesa/widgets/siswa_header.dart';
 import 'package:si_kesa/widgets/siswa_data_card.dart';
-import 'package:si_kesa/screens/wali/absensi_screen.dart';
-import 'package:si_kesa/screens/wali/disiplin_screen.dart';
-import 'package:si_kesa/screens/wali/nilai_screen.dart';
 
 class SiswaDashboardScreen extends StatefulWidget {
-  const SiswaDashboardScreen({super.key});
+  /// Pindah tab pada SiswaMainScreen (1 Nilai, 2 Absen, 3 Disiplin).
+  final ValueChanged<int> onBukaTab;
+  const SiswaDashboardScreen({super.key, required this.onBukaTab});
 
   @override
   State<SiswaDashboardScreen> createState() => _SiswaDashboardScreenState();
@@ -65,11 +64,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                             icon: Icons.calendar_month,
                             cardColor: _absenBg,
                             iconColor: AppColors.primary,
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const AbsensiSiswaScreen(),
-                              ),
-                            ),
+                            onTap: () => widget.onBukaTab(2),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -80,11 +75,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                             icon: Icons.note_add,
                             cardColor: _nilaiBg,
                             iconColor: const Color(0xFF2E8B57),
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const NilaiSiswaScreen(),
-                              ),
-                            ),
+                            onTap: () => widget.onBukaTab(1),
                           ),
                         ),
                       ],
@@ -100,11 +91,7 @@ class _SiswaDashboardScreenState extends State<SiswaDashboardScreen> {
                             icon: Icons.assignment,
                             cardColor: _disiplinBg,
                             iconColor: const Color(0xFFB88A8A),
-                            onTap: () => Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const DisiplinSiswaScreen(),
-                              ),
-                            ),
+                            onTap: () => widget.onBukaTab(3),
                           ),
                         ),
                         const SizedBox(width: 12),

@@ -5,10 +5,12 @@ import 'package:si_kesa/services/api_client.dart';
 import 'package:si_kesa/services/wali_service.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
+import 'package:si_kesa/widgets/semester_toggle.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class NilaiSiswaScreen extends StatefulWidget {
-  const NilaiSiswaScreen({super.key});
+  final bool showBack;
+  const NilaiSiswaScreen({super.key, this.showBack = true});
 
   @override
   State<NilaiSiswaScreen> createState() => _NilaiSiswaScreenState();
@@ -66,7 +68,7 @@ class _NilaiSiswaScreenState extends State<NilaiSiswaScreen> {
     return Scaffold(
       body: Column(
         children: [
-          const SubPageHeader(title: 'Rekap Nilai'),
+          SubPageHeader(title: 'Rekap Nilai', showBack: widget.showBack),
           Expanded(
             child: FutureBuilder<NilaiResult>(
               future: _future,
@@ -84,7 +86,7 @@ class _NilaiSiswaScreenState extends State<NilaiSiswaScreen> {
                 return ListView(
                   padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
                   children: [
-                    _pilihSemester(hasil.tahunAjaran),
+                    _pilihSemester(hasil.tahunAjaran, hasil.semesterAktif),
                     const SizedBox(height: 18),
                     _tabBar(),
                     const SizedBox(height: 22),
@@ -110,28 +112,12 @@ class _NilaiSiswaScreenState extends State<NilaiSiswaScreen> {
     );
   }
 
-  Widget _pilihSemester(String tahunAjaran) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Tahun Ajaran $tahunAjaran',
-          style: const TextStyle(fontSize: 13, color: AppColors.textHint),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          width: double.infinity,
-          child: SegmentedButton<String>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment(value: 'ganjil', label: Text('Semester Ganjil')),
-              ButtonSegment(value: 'genap', label: Text('Semester Genap')),
-            ],
-            selected: {_semester ?? 'ganjil'},
-            onSelectionChanged: (s) => setState(() => _semester = s.first),
-          ),
-        ),
-      ],
+  Widget _pilihSemester(String tahunAjaran, String semesterAktif) {
+    return SemesterToggle(
+      tahunAjaran: tahunAjaran,
+      semester: _semester ?? semesterAktif,
+      semesterAktif: semesterAktif,
+      onChanged: (v) => setState(() => _semester = v),
     );
   }
 
