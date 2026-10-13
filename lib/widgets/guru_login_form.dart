@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:si_kesa/config/theme_config.dart';
+import 'package:si_kesa/screens/guru/guru_main_screen.dart';
+import 'package:si_kesa/services/api_client.dart';
+import 'package:si_kesa/services/auth_service.dart';
 import 'package:si_kesa/widgets/app_text_field.dart';
 import 'package:si_kesa/widgets/primary_button.dart';
 
@@ -13,10 +16,12 @@ class GuruLoginForm extends StatefulWidget {
 class _GuruLoginFormState extends State<GuruLoginForm> {
   final _usernameC = TextEditingController();
   final _passwordC = TextEditingController();
+  bool _loading = false;
+  String? _pesan;
 
-  // Tombol aktif hanya jika username dan password sama-sama terisi
+  // Tombol aktif hanya jika username dan password terisi dan tidak sedang memproses
   bool get _canSubmit =>
-      _usernameC.text.trim().isNotEmpty && _passwordC.text.isNotEmpty;
+      _usernameC.text.trim().isNotEmpty && _passwordC.text.isNotEmpty && !_loading;
 
   @override
   void dispose() {
@@ -25,11 +30,26 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
     super.dispose();
   }
 
-  void _submit() {
-    // Sementara: logika login dibuat di Langkah 5e
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Login belum disambungkan')),
-    );
+  Future<void> _submit() async {
+    setState(() {
+      _loading = true;
+      _pesan = null;
+    });
+    try {
+      await AuthService.loginGuru(_usernameC.text.trim(), _passwordC.text);
+      if (!mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const GuruMainScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _passwordC.clear(); // sesuai dokumen: gagal -> kosongkan password
+      setState(() {
+        _loading = false;
+        _pesan = pesanDariError(e);
+      });
+    }
   }
 
   @override
@@ -51,6 +71,7 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
           label: 'NIP/Username',
           hint: 'Masukkan NIP atau Username',
           controller: _usernameC,
+          enabled: !_loading,
           onChanged: (_) => setState(() {}),
         ),
         const SizedBox(height: 20),
@@ -59,11 +80,23 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
           hint: 'Masukkan Kata Sandi',
           controller: _passwordC,
           isPassword: true,
+          enabled: !_loading,
           onChanged: (_) => setState(() {}),
         ),
-        const SizedBox(height: 80),
+        const SizedBox(height: 12),
+        if (_pesan != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              _pesan!,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: Color(0xFFD32F2F)),
+            ),
+          ),
+        const SizedBox(height: 44),
         PrimaryButton(
           label: 'Masuk',
+          loading: _loading,
           onPressed: _canSubmit ? _submit : null,
         ),
         const SizedBox(height: 32),

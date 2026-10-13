@@ -31,7 +31,7 @@ Future<void> _sesiBerakhir() async {
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  ApiClient.instance.tokenProvider = AuthService.tokenAktif;
+  ApiClient.instance.tokenProvider = AuthService.token;
   ApiClient.instance.onUnauthorized = _sesiBerakhir;
   runApp(const SiKesaApp());
 }
@@ -62,24 +62,21 @@ class _GerbangAwal extends StatefulWidget {
 }
 
 class _GerbangAwalState extends State<_GerbangAwal> {
-  late final Future<PeranSesi?> _sesi = AuthService.peran();
+  late final Future<Peran?> _sesi = AuthService.peran();
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<PeranSesi?>(
+    return FutureBuilder<Peran?>(
       future: _sesi,
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        switch (snap.data) {
-          case PeranSesi.guru:
-            return const GuruMainScreen();
-          case PeranSesi.wali:
-            return const SiswaMainScreen();
-          case null:
-            return const LoginScreen();
-        }
+        return switch (snap.data) {
+          Peran.guru => const GuruMainScreen(),
+          Peran.wali => const SiswaMainScreen(),
+          null => const LoginScreen(),
+        };
       },
     );
   }
