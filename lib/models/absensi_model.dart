@@ -46,3 +46,21 @@ class AbsensiResult {
             .toList(),
       );
 }
+
+/// Status absensi kelas pada satu tanggal, untuk kartu di Beranda Guru.
+enum StatusAbsensiHari { sudah, belum, libur }
+
+/// GET /api/guru/dasbor/absensi?date=YYYY-MM-DD.
+/// CATATAN: bentuk respons belum ada di dokumen yang saya baca; parser ini menerima `status`
+/// ("sudah"/"belum"/"libur") atau penanda boolean. Cocokkan dengan KONTRAK_API.md.
+StatusAbsensiHari bacaStatusAbsensiHari(Map<String, dynamic> j) {
+  if (j['libur'] == true) return StatusAbsensiHari.libur;
+  final s = '${j['status'] ?? ''}'.toLowerCase();
+  if (s.contains('libur')) return StatusAbsensiHari.libur;
+  if (s.startsWith('sudah')) return StatusAbsensiHari.sudah;
+  if (s.startsWith('belum')) return StatusAbsensiHari.belum;
+  if (j['sudah_absen'] == true || j['sudah'] == true || j['terisi'] == true) {
+    return StatusAbsensiHari.sudah;
+  }
+  return StatusAbsensiHari.belum;
+}
