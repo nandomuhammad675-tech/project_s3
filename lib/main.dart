@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/screens/auth/login_screen.dart';
+import 'package:si_kesa/screens/guru/guru_main_screen.dart';
 import 'package:si_kesa/screens/wali/siswa_main_screen.dart';
 import 'package:si_kesa/services/api_client.dart';
 import 'package:si_kesa/services/auth_service.dart';
@@ -30,7 +31,7 @@ Future<void> _sesiBerakhir() async {
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  ApiClient.instance.tokenProvider = AuthService.token;
+  ApiClient.instance.tokenProvider = AuthService.tokenAktif;
   ApiClient.instance.onUnauthorized = _sesiBerakhir;
   runApp(const SiKesaApp());
 }
@@ -51,7 +52,8 @@ class SiKesaApp extends StatelessWidget {
   }
 }
 
-/// Layar pertama: ada token yang masih berlaku -> langsung ke portal Wali, selain itu ke login.
+/// Layar pertama: ada token Guru -> portal Guru, ada token Wali -> portal Wali, selain itu ke login.
+/// Token yang sudah mati ketahuan di layar berikutnya (401 -> kembali ke Login).
 class _GerbangAwal extends StatefulWidget {
   const _GerbangAwal();
 
@@ -60,17 +62,24 @@ class _GerbangAwal extends StatefulWidget {
 }
 
 class _GerbangAwalState extends State<_GerbangAwal> {
-  late final Future<bool> _sesi = AuthService.punyaSesi();
+  late final Future<PeranSesi?> _sesi = AuthService.peran();
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
+    return FutureBuilder<PeranSesi?>(
       future: _sesi,
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
-        return snap.data == true ? const SiswaMainScreen() : const LoginScreen();
+        switch (snap.data) {
+          case PeranSesi.guru:
+            return const GuruMainScreen();
+          case PeranSesi.wali:
+            return const SiswaMainScreen();
+          case null:
+            return const LoginScreen();
+        }
       },
     );
   }

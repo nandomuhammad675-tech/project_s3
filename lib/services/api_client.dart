@@ -22,6 +22,16 @@ class ApiException implements Exception {
 String pesanDariError(Object e) =>
     e is ApiException ? e.message : 'Terjadi gangguan, coba lagi.';
 
+
+/// Membungkus pengurai JSON: data yang bentuknya tidak sesuai menjadi pesan yang ramah, bukan crash.
+T uraiData<T>(T Function() f) {
+  try {
+    return f();
+  } catch (_) {
+    throw const ApiException('Data dari server tidak dapat dibaca.');
+  }
+}
+
 /// Klien HTTP tunggal. Membungkus respons {success, message, data} sehingga pemanggil
 /// langsung menerima `data`, atau ApiException bila gagal (KONTRAK_API.md bagian 0).
 class ApiClient {
@@ -101,6 +111,10 @@ class ApiClient {
     final m = json?['message'];
     var pesan = m is String ? m : 'Terjadi gangguan, coba lagi.';
     if (kode >= 500) pesan = 'Terjadi gangguan, coba lagi.';
+
+    if (kode == 403) pesan = 'Anda tidak memiliki akses.';
+    if (kode == 429) pesan = 'Terlalu banyak percobaan, coba lagi nanti.';
+    // 409 dan 422: pesan dari server ditampilkan apa adanya.
 
     final errors = <String, String>{};
     final e = json?['errors'];
