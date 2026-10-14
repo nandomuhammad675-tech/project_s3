@@ -35,6 +35,8 @@ class AppHeader extends StatelessWidget {
   static const double _tebalGaris = 8;
   static const double _tinggiLogo = 60;
   static const String _logo = 'assets/images/logo_sekolah.png';
+  static double tinggi(BuildContext context) =>
+      _tinggiHijau + _tebalGaris + MediaQuery.of(context).padding.top;
   // ===================================================================
 
   @override

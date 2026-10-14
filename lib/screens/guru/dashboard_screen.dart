@@ -4,15 +4,18 @@ import 'package:si_kesa/models/guru_model.dart';
 import 'package:si_kesa/services/api_client.dart';
 import 'package:si_kesa/services/guru_service.dart';
 import 'package:si_kesa/utils/ui_helper.dart';
+import 'package:si_kesa/widgets/app_header.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/guru_header.dart';
 import 'package:si_kesa/widgets/guru_jadwal_hari_ini_card.dart';
-import 'package:si_kesa/widgets/guru_kelas_card.dart';
 import 'package:si_kesa/widgets/guru_menu_card.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
+import 'package:si_kesa/screens/guru/disiplin/form_screen.dart';
+import 'package:si_kesa/screens/guru/disiplin/rekap_screen.dart';
+import 'package:si_kesa/screens/guru/piket/piket_screen.dart';
 
 /// Beranda Guru. Memanggil GET /api/guru/me (Dokumen 02 bagian 2.4):
-/// - kelas terisi  : ringkasan kelas, status absensi hari ini, menu, jadwal hari ini
+/// - kelas terisi  : menu Akses Cepat dan jadwal hari ini
 /// - kelas = null  : pesan "belum ditetapkan sebagai wali kelas", semua menu dimatikan, tanpa crash
 /// - memuat/gagal  : indikator / pesan + tombol Coba Lagi
 /// 401 ditangani global di ApiClient (hapus token, kembali ke Login).
@@ -45,7 +48,7 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
   ];
 
   late Future<GuruModel> _guru = GuruService.me();
-  int _versi = 0; // naik tiap penyegaran agar kartu anak memuat ulang datanya
+  int _versi = 0; // naik tiap penyegaran agar kartu jadwal memuat ulang datanya
 
   /// Muat ulang semua (tarik layar ke bawah, atau tombol Coba Lagi).
   Future<void> _muat() async {
@@ -60,23 +63,45 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
     }
   }
 
-  // TODO: ganti dengan Navigator.push ke layar fitur bila sudah dibuat, lalu panggil _muat()
-  // setelah kembali (supaya kartu "Absensi Hari Ini" berubah menjadi "Sudah").
-  void _buka(String nama) => tampilkanBelumTersedia(context, nama);
+  // TODO: ganti dengan Navigator.push ke layar fitur bila sudah dibuat.
+        void _buka(String nama) {
+    if (nama == 'Kedisiplinan') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const DisiplinGuruScreen()),
+      );
+      return;
+    }
+    if (nama == 'Rekap Kedisiplinan') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const RekapDisiplinGuruScreen()),
+      );
+      return;
+    }
+    if (nama == 'Jadwal Piket') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PiketGuruScreen()),
+      );
+      return;
+    }
+    tampilkanBelumTersedia(context, nama);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final tinggiHeader = AppHeader.tinggi(context);
+
     return Scaffold(
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: _muat,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              const GuruHeader(),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+      body: Stack(
+        children: [
+          // Isi yang digulir, berada di belakang header.
+          Positioned.fill(
+            child: RefreshIndicator(
+              color: AppColors.primary,
+              edgeOffset: tinggiHeader,
+              onRefresh: _muat,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(16, tinggiHeader + 20, 16, 24),
                 child: FutureBuilder<GuruModel>(
                   future: _guru,
                   builder: (context, snap) {
@@ -90,9 +115,11 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
                   },
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          // Header tetap di atas, tidak ikut tergulir.
+          const Positioned(top: 0, left: 0, right: 0, child: GuruHeader()),
+        ],
       ),
     );
   }
@@ -102,15 +129,10 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (aktif)
-          GuruKelasCard(
-            key: ValueKey('kelas$_versi'),
-            guru: guru,
-            onIsiAbsensi: () => _buka('Absensi'),
-          )
-        else
+        if (!aktif) ...[
           const _PesanBelumWaliKelas(),
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
+        ],
         const Text(
           'Akses Cepat',
           style: TextStyle(

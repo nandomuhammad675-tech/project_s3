@@ -42,6 +42,16 @@ class AuthService {
     await _simpanToken(StorageKeys.guruToken, StorageKeys.guruHabisPada, data);
   }
 
+  /// PUT /api/auth/password. Server menerbitkan token baru (token lama tidak berlaku lagi),
+  /// jadi token baru langsung disimpan supaya Guru tidak terlempar ke layar login.
+  static Future<void> gantiPasswordGuru(String lama, String baru) async {
+    final data = await ApiClient.instance.put(
+      '/api/auth/password',
+      body: {'password_lama': lama, 'password_baru': baru},
+    ) as Map<String, dynamic>;
+    await _simpanToken(StorageKeys.guruToken, StorageKeys.guruHabisPada, data);
+  }
+
   // ===================== Bersama =====================
 
   static Future<void> _simpanToken(

@@ -61,7 +61,7 @@ class _GuruKelasCardState extends State<GuruKelasCard> {
                       style: const TextStyle(fontSize: 12, color: AppColors.textDark),
                     ),
                     Text(
-                      '${kelas.tahunAjaran} \u2022 Semester ${kelas.semesterLabel} \u2022 ${kelas.jumlahSiswaAktif} siswa aktif',
+                      '${kelas.tahunAjaran} \u2022 Semester ${kelas.semesterLabel}${kelas.jumlahSiswaAktif == null ? '' : ' \u2022 ${kelas.jumlahSiswaAktif} siswa aktif'}',
                       style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                     ),
                   ],

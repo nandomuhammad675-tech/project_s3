@@ -51,6 +51,13 @@ class ApiClient {
 
   Future<dynamic> post(String path, {Map<String, dynamic>? body, bool auth = true}) =>
       _kirim('POST', path, body: body, auth: auth);
+  
+  // tambahkan di bawah method post(...)
+  Future<dynamic> put(String path, {Map<String, dynamic>? body, bool auth = true}) =>
+      _kirim('PUT', path, body: body, auth: auth);
+  
+  Future<dynamic> delete(String path, {bool auth = true}) =>
+      _kirim('DELETE', path, auth: auth);
 
   Uri _uri(String path, Map<String, String?>? query) {
     final params = <String, String>{};
@@ -61,7 +68,7 @@ class ApiClient {
     return params.isEmpty ? uri : uri.replace(queryParameters: params);
   }
 
-  Future<dynamic> _kirim(
+    Future<dynamic> _kirim(
     String method,
     String path, {
     Map<String, String?>? query,
@@ -69,7 +76,7 @@ class ApiClient {
     required bool auth,
   }) async {
     final headers = <String, String>{'Accept': 'application/json'};
-    if (method == 'POST') headers['Content-Type'] = 'application/json';
+    if (method != 'GET') headers['Content-Type'] = 'application/json'; // <-- UBAH (dulu: method == 'POST')
     if (auth) {
       final token = await tokenProvider?.call();
       if (token != null) headers['Authorization'] = 'Bearer $token';
@@ -78,9 +85,14 @@ class ApiClient {
     final uri = _uri(path, query);
     final http.Response res;
     try {
-      final permintaan = method == 'GET'
-          ? _client.get(uri, headers: headers)
-          : _client.post(uri, headers: headers, body: jsonEncode(body ?? <String, dynamic>{}));
+      // <-- UBAH: tiga baris "final permintaan = method == 'GET' ? ... : ..." diganti blok ini
+      final isi = jsonEncode(body ?? <String, dynamic>{});
+      final permintaan = switch (method) {
+        'GET' => _client.get(uri, headers: headers),
+        'PUT' => _client.put(uri, headers: headers, body: isi),
+        'DELETE' => _client.delete(uri, headers: headers),
+        _ => _client.post(uri, headers: headers, body: isi),
+      };
       res = await permintaan.timeout(ApiConfig.timeout);
     } on TimeoutException {
       throw const ApiException('Server tidak merespons. Coba lagi.');
