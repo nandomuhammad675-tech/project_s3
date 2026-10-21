@@ -142,21 +142,33 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
               color: AppColors.primary,
               edgeOffset: tinggiHeader,
               onRefresh: _muat,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.fromLTRB(16, tinggiHeader + 20, 16, 24),
-                child: FutureBuilder<GuruModel>(
-                  future: _guru,
-                  builder: (context, snap) {
-                    if (snap.connectionState != ConnectionState.done) {
-                      return const SizedBox(height: 280, child: LoadingIndicator());
-                    }
-                    if (snap.hasError) {
-                      return ErrorState(message: pesanDariError(snap.error!), onRetry: _muat);
-                    }
-                    return _isi(snap.data!);
-                  },
-                ),
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  // Tinggi area kosong di bawah header, dipakai agar loading/error tepat di tengah.
+                  final tinggiTengah = box.maxHeight - tinggiHeader - 20 - 24;
+                  return SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(16, tinggiHeader + 20, 16, 24),
+                    child: FutureBuilder<GuruModel>(
+                      future: _guru,
+                      builder: (context, snap) {
+                        if (snap.connectionState != ConnectionState.done) {
+                          return SizedBox(
+                            height: tinggiTengah,
+                            child: const LoadingIndicator(),
+                          );
+                        }
+                        if (snap.hasError) {
+                          return SizedBox(
+                            height: tinggiTengah,
+                            child: ErrorState(message: pesanDariError(snap.error!), onRetry: _muat),
+                          );
+                        }
+                        return _isi(snap.data!);
+                      },
+                    ),
+                  );
+                },
               ),
             ),
           ),
@@ -205,7 +217,7 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
             semester: guru.kelas!.semester,
             namaKelas: guru.kelas!.nama,
             onLihatSemua: () => _buka('Jadwal'),
-             onTapJudul: () => _buka('Jadwal Mengajar'),
+            onTapJudul: () => _buka('Jadwal Mengajar'),
           ),
         ],
       ],
