@@ -14,12 +14,14 @@ class GuruJadwalHariIniCard extends StatefulWidget {
   final String semester; // ganjil | genap
   final String namaKelas;
   final VoidCallback onLihatSemua;
+  final VoidCallback? onTapJudul; // <-- BARU: ketuk icon + judul kartu
 
   const GuruJadwalHariIniCard({
     super.key,
     required this.semester,
     required this.namaKelas,
     required this.onLihatSemua,
+    this.onTapJudul, // <-- BARU
   });
 
   @override
@@ -47,43 +49,56 @@ class _GuruJadwalHariIniCardState extends State<GuruJadwalHariIniCard> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(5),
-                decoration: BoxDecoration(
-                  color: AppColors.headerGreen,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Icon(Icons.event_note, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Jadwal Hari Ini',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
-                  ),
-                ),
-              ),
-              InkWell(
-                onTap: widget.onLihatSemua,
-                borderRadius: BorderRadius.circular(6),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 6, vertical: 14), // sentuhan >= 48 dp
-                  child: Text(
-                    'Lihat Semua',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textDark,
+              children: [
+                Expanded(
+                  child: InkWell(
+                    onTap: widget.onTapJudul ?? widget.onLihatSemua,
+                    borderRadius: BorderRadius.circular(6),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: AppColors.headerGreen,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Icon(Icons.event_note, color: Colors.white, size: 18),
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              'Jadwal Hari Ini',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textDark,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
+                InkWell(
+                  onTap: widget.onLihatSemua,
+                  borderRadius: BorderRadius.circular(6),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 14),
+                    child: Text(
+                      'Lihat Semua',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(

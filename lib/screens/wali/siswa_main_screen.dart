@@ -25,13 +25,13 @@ class _SiswaMainScreenState extends State<SiswaMainScreen> {
       case 0:
         return SiswaDashboardScreen(onBukaTab: _pindah);
       case 1:
-        return const NilaiSiswaScreen(showBack: false);
+        return NilaiSiswaScreen(onBack: () => _pindah(0));
       case 2:
-        return const AbsensiSiswaScreen(showBack: false);
+        return AbsensiSiswaScreen(onBack: () => _pindah(0));
       case 3:
-        return const DisiplinSiswaScreen(showBack: false);
+        return DisiplinSiswaScreen(onBack: () => _pindah(0));
       default:
-        return const ProfilSiswaScreen(showBack: false);
+        return ProfilSiswaScreen(onBack: () => _pindah(0));
     }
   }
 

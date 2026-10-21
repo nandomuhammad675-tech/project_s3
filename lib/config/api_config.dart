@@ -7,7 +7,7 @@ class ApiConfig {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.0.102/si-kesa/backend/public',
+        defaultValue: 'http://172.16.100.234/project_s3_web/backend/public',
   );
 
   static const Duration timeout = Duration(seconds: 20);

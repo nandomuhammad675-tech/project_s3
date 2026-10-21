@@ -7,11 +7,13 @@ import 'package:si_kesa/services/auth_service.dart';
 import 'package:si_kesa/services/wali_service.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
+import 'package:si_kesa/widgets/app_header.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class ProfilSiswaScreen extends StatefulWidget {
   final bool showBack;
-  const ProfilSiswaScreen({super.key, this.showBack = true});
+  final VoidCallback? onBack;
+  const ProfilSiswaScreen({super.key, this.showBack = true, this.onBack});
 
   @override
   State<ProfilSiswaScreen> createState() => _ProfilSiswaScreenState();
@@ -61,23 +63,26 @@ class _ProfilSiswaScreenState extends State<ProfilSiswaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tinggi = AppHeader.tinggi(context); // tinggi header gelombang
     return Scaffold(
       body: Column(
         children: [
-          SubPageHeader(title: 'Profil Akun', showBack: widget.showBack),
-          Expanded(
-            child: FutureBuilder<SiswaModel>(
+          Expanded(child: Stack(children: [
+Positioned.fill(child: FutureBuilder<SiswaModel>(
               future: _profil,
               builder: (context, snap) {
                 if (snap.connectionState != ConnectionState.done) {
-                  return const LoadingIndicator();
+                  return Padding(padding: EdgeInsets.only(top: tinggi), child: const LoadingIndicator());
                 }
                 if (snap.hasError) {
-                  return ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang);
+                  return Padding(
+                    padding: EdgeInsets.only(top: tinggi),
+                    child: ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang),
+                  );
                 }
                 final s = snap.data!;
                 return SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
+                  padding: EdgeInsets.fromLTRB(24, 28 + tinggi, 24, 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -120,8 +125,9 @@ class _ProfilSiswaScreenState extends State<ProfilSiswaScreen> {
                   ),
                 );
               },
-            ),
-          ),
+            )),
+Positioned(top: 0, left: 0, right: 0, child: SubPageHeader(title: 'Profil Akun', showBack: widget.showBack, onBack: widget.onBack)),
+])),
           // Tombol Keluar Akun menempel di bawah (tetap tersedia walau data gagal dimuat)
           SafeArea(
             top: false,

@@ -8,11 +8,13 @@ import 'package:si_kesa/utils/date_formatter.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/semester_toggle.dart';
+import 'package:si_kesa/widgets/app_header.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class AbsensiSiswaScreen extends StatefulWidget {
   final bool showBack;
-  const AbsensiSiswaScreen({super.key, this.showBack = true});
+  final VoidCallback? onBack;
+  const AbsensiSiswaScreen({super.key, this.showBack = true, this.onBack});
 
   @override
   State<AbsensiSiswaScreen> createState() => _AbsensiSiswaScreenState();
@@ -81,19 +83,20 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tinggi = AppHeader.tinggi(context); // tinggi header gelombang
     return Scaffold(
-      body: Column(
-        children: [
-          SubPageHeader(title: 'Riwayat Absen', showBack: widget.showBack),
-          Expanded(
-            child: FutureBuilder<_Data>(
+      body: Stack(children: [
+Positioned.fill(child: FutureBuilder<_Data>(
               future: _future,
               builder: (context, snap) {
                 if (snap.connectionState != ConnectionState.done) {
-                  return const LoadingIndicator();
+                  return Padding(padding: EdgeInsets.only(top: tinggi), child: const LoadingIndicator());
                 }
                 if (snap.hasError) {
-                  return ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang);
+                  return Padding(
+                    padding: EdgeInsets.only(top: tinggi),
+                    child: ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang),
+                  );
                 }
                 final d = snap.data!;
                 _semester ??= d.semesterAktif;
@@ -106,7 +109,7 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
                 final data = _bulanIni(itemSemester);
 
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+                  padding: EdgeInsets.fromLTRB(20, 20 + tinggi, 20, 24),
                   children: [
                     _kartuSiswa(d.siswa),
                     const SizedBox(height: 16),
@@ -177,10 +180,9 @@ class _AbsensiSiswaScreenState extends State<AbsensiSiswaScreen> {
                   ],
                 );
               },
-            ),
-          ),
-        ],
-      ),
+            )),
+Positioned(top: 0, left: 0, right: 0, child: SubPageHeader(title: 'Riwayat Absen', showBack: widget.showBack, onBack: widget.onBack)),
+]),
     );
   }
 

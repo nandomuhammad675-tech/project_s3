@@ -6,11 +6,13 @@ import 'package:si_kesa/services/wali_service.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/semester_toggle.dart';
+import 'package:si_kesa/widgets/app_header.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class NilaiSiswaScreen extends StatefulWidget {
   final bool showBack;
-  const NilaiSiswaScreen({super.key, this.showBack = true});
+  final VoidCallback? onBack;
+  const NilaiSiswaScreen({super.key, this.showBack = true, this.onBack});
 
   @override
   State<NilaiSiswaScreen> createState() => _NilaiSiswaScreenState();
@@ -65,26 +67,27 @@ class _NilaiSiswaScreenState extends State<NilaiSiswaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final tinggi = AppHeader.tinggi(context); // tinggi header gelombang
     return Scaffold(
-      body: Column(
-        children: [
-          SubPageHeader(title: 'Rekap Nilai', showBack: widget.showBack),
-          Expanded(
-            child: FutureBuilder<NilaiResult>(
+      body: Stack(children: [
+Positioned.fill(child: FutureBuilder<NilaiResult>(
               future: _future,
               builder: (context, snap) {
                 if (snap.connectionState != ConnectionState.done) {
-                  return const LoadingIndicator();
+                  return Padding(padding: EdgeInsets.only(top: tinggi), child: const LoadingIndicator());
                 }
                 if (snap.hasError) {
-                  return ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang);
+                  return Padding(
+                    padding: EdgeInsets.only(top: tinggi),
+                    child: ErrorState(message: pesanDariError(snap.error!), onRetry: _muatUlang),
+                  );
                 }
                 final hasil = snap.data!;
                 _semester ??= hasil.semesterAktif;
                 _data = hasil.items.where((m) => m.semester == _semester).toList();
 
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+                  padding: EdgeInsets.fromLTRB(16, 24 + tinggi, 16, 24),
                   children: [
                     _pilihSemester(hasil.tahunAjaran, hasil.semesterAktif),
                     const SizedBox(height: 18),
@@ -105,10 +108,9 @@ class _NilaiSiswaScreenState extends State<NilaiSiswaScreen> {
                   ],
                 );
               },
-            ),
-          ),
-        ],
-      ),
+            )),
+Positioned(top: 0, left: 0, right: 0, child: SubPageHeader(title: 'Rekap Nilai', showBack: widget.showBack, onBack: widget.onBack)),
+]),
     );
   }
 

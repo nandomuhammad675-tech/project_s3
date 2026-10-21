@@ -13,6 +13,12 @@ import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/screens/guru/disiplin/form_screen.dart';
 import 'package:si_kesa/screens/guru/disiplin/rekap_screen.dart';
 import 'package:si_kesa/screens/guru/piket/piket_screen.dart';
+import 'package:si_kesa/screens/guru/absensi/absensi_screen.dart';
+import 'package:si_kesa/screens/guru/absensi/riwayat_screen.dart';
+import 'package:si_kesa/screens/guru/nilai/input_nilai_screen.dart';
+import 'package:si_kesa/screens/guru/nilai/rekap_nilai_screen.dart';
+import 'package:si_kesa/screens/guru/jadwal/jadwal_mengajar_screen.dart';
+import 'package:si_kesa/screens/guru/jadwal/jadwal_hari_ini_screen.dart';
 
 /// Beranda Guru. Memanggil GET /api/guru/me (Dokumen 02 bagian 2.4):
 /// - kelas terisi  : menu Akses Cepat dan jadwal hari ini
@@ -65,6 +71,43 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
 
   // TODO: ganti dengan Navigator.push ke layar fitur bila sudah dibuat.
         void _buka(String nama) {
+              if (nama == 'Jadwal Mengajar') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const JadwalMengajarGuruScreen()),
+      );
+      return;
+    }
+    if (nama == 'Jadwal') {
+      // Tombol "Lihat Semua" pada kartu Jadwal Hari Ini di Beranda.
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const JadwalHariIniGuruScreen()),
+      );
+      return;
+    }
+              if (nama == 'Rekap Nilai') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const RekapNilaiGuruScreen()),
+      );
+      return;
+    }
+          if (nama == 'Input Nilai') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const InputNilaiGuruScreen()),
+      );
+      return;
+    }
+      if (nama == 'Absensi Harian') {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const AbsensiGuruScreen()),
+      );
+      return;
+    }
+       if (nama == 'Riwayat Absen') {
+     Navigator.of(context).push(
+       MaterialPageRoute(builder: (_) => const RiwayatAbsenGuruScreen()),
+     );
+     return;
+   }
     if (nama == 'Kedisiplinan') {
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const DisiplinGuruScreen()),
@@ -162,6 +205,7 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
             semester: guru.kelas!.semester,
             namaKelas: guru.kelas!.nama,
             onLihatSemua: () => _buka('Jadwal'),
+             onTapJudul: () => _buka('Jadwal Mengajar'),
           ),
         ],
       ],

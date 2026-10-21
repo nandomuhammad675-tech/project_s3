@@ -4,8 +4,14 @@ import 'package:si_kesa/widgets/app_header.dart';
 class SubPageHeader extends StatelessWidget {
   final String title;
   final bool showBack;
+  final VoidCallback? onBack;
 
-  const SubPageHeader({super.key, required this.title, this.showBack = true});
+  const SubPageHeader({
+    super.key,
+    required this.title,
+    this.showBack = true,
+    this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +25,7 @@ class SubPageHeader extends StatelessWidget {
               if (showBack)
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () => Navigator.of(context).maybePop(),
+                  onTap: onBack ?? () => Navigator.of(context).maybePop(),
                   child: const Padding(
                     padding: EdgeInsets.only(right: 8),
                     child: Icon(
