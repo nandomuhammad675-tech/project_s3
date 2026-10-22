@@ -25,8 +25,6 @@ class _WaliLoginFormState extends State<WaliLoginForm> {
   String? _pesan;
 
   // Tombol aktif jika NISN tepat 10 digit, kata sandi terisi, dan tidak sedang memproses
-  bool get _canSubmit =>
-      _nisnC.text.length == 10 && _passwordC.text.isNotEmpty && !_loading;
 
   @override
   void dispose() {
@@ -35,9 +33,30 @@ class _WaliLoginFormState extends State<WaliLoginForm> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+    Future<void> _submit() async {
+    if (_loading) return; // cegah ketukan ganda
+
+    final nisn = _nisnC.text.trim();
+    final sandi = _passwordC.text;
+    if (nisn.isEmpty && sandi.isEmpty) {
+      setState(() => _pesan = 'NISN dan kata sandi Silakan isi dulu.');
+      return;
+    }
+    if (nisn.isEmpty) {
+      setState(() => _pesan = 'NISN belum diisi. Silakan isi dulu ya.');
+      return;
+    }
+    if (nisn.length != 10) {
+      setState(() => _pesan = 'NISN harus terdiri dari 10 angka.');
+      return;
+    }
+    if (sandi.isEmpty) {
+      setState(() => _pesan = 'Kata sandi belum diisi. Silakan isi dulu ya.');
+      return;
+    }
+
     // Kata sandi harus sama dengan NISN; pesan sengaja sama dengan kegagalan login lain (tidak membocorkan apa pun).
-    if (_passwordC.text != _nisnC.text) {
+    if (sandi != nisn) {
       setState(() => _pesan = 'NISN atau kata sandi salah.');
       return;
     }
@@ -46,7 +65,7 @@ class _WaliLoginFormState extends State<WaliLoginForm> {
       _pesan = null;
     });
     try {
-      await AuthService.loginWali(_nisnC.text.trim());
+      await AuthService.loginWali(nisn);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const SiswaMainScreen()),
@@ -83,7 +102,7 @@ class _WaliLoginFormState extends State<WaliLoginForm> {
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           maxLength: 10,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() => _pesan = null),
         ),
         const SizedBox(height: 20),
         AppTextField(
@@ -94,7 +113,7 @@ class _WaliLoginFormState extends State<WaliLoginForm> {
           keyboardType: TextInputType.number,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           maxLength: 10,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() => _pesan = null),
         ),
         const SizedBox(height: 12),
         if (_pesan != null)
@@ -110,7 +129,7 @@ class _WaliLoginFormState extends State<WaliLoginForm> {
         PrimaryButton(
           label: 'Masuk',
           loading: _loading,
-          onPressed: _canSubmit ? _submit : null,
+          onPressed: _submit,
         ),
         const SizedBox(height: 32),
         const Text(

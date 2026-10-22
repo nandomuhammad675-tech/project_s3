@@ -1,24 +1,6 @@
-import 'dart:io';
-import 'dart:typed_data';
-
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
-
-const String _mimeXlsx = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+// Simpan/bagikan berkas Excel: cara kerjanya dipilih otomatis sesuai platform.
+// HP (Android/iOS): menu Bagikan. Web: unduh langsung lewat browser.
+export 'berkas_helper_io.dart' if (dart.library.js_interop) 'berkas_helper_web.dart';
 
 /// Huruf, angka, dan minus saja (aman untuk nama berkas).
 String namaBerkasAman(String s) => s.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-');
-
-/// Menyimpan [bytes] sebagai berkas sementara, lalu membuka menu Bagikan
-/// (simpan ke Drive/File, kirim WhatsApp, atau buka di aplikasi Excel).
-Future<void> bagikanExcel(Uint8List bytes, String namaFile) async {
-  final dir = await getTemporaryDirectory();
-  final berkas = File('${dir.path}/$namaFile');
-  await berkas.writeAsBytes(bytes, flush: true);
-  await SharePlus.instance.share(
-    ShareParams(
-      files: [XFile(berkas.path, mimeType: _mimeXlsx, name: namaFile)],
-      subject: namaFile,
-    ),
-  );
-}

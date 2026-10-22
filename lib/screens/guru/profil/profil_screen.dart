@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:package_info_plus/package_info_plus.dart';
 import 'package:si_kesa/config/api_config.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_model.dart';
@@ -24,7 +23,7 @@ class ProfilGuruScreen extends StatefulWidget {
 
 class _ProfilGuruScreenState extends State<ProfilGuruScreen> {
   late Future<GuruModel> _profil = GuruService.me();
-  final Future<PackageInfo> _info = PackageInfo.fromPlatform();
+  
 
   void _muatUlang() => setState(() => _profil = GuruService.me());
 
@@ -166,16 +165,7 @@ class _ProfilGuruScreenState extends State<ProfilGuruScreen> {
                     ),
                     const SizedBox(height: 32),
                     _tombolKeluar(),
-                    const SizedBox(height: 20),
-                    Center(
-                      child: FutureBuilder<PackageInfo>(
-                        future: _info,
-                        builder: (context, s) => Text(
-                          s.hasData ? 'SI-KESA Guru v${s.data!.version}' : '',
-                          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
-                        ),
-                      ),
-                    ),
+                                        const SizedBox(height: 20),
                   ],
                 ),
               ),

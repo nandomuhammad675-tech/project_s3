@@ -41,7 +41,7 @@ class LoginHeader extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           const Text(
-            'Cerdas, Kreatif, Beriman, Berwawasan Lingkungan dan Inovati',
+            'Cerdas, Kreatif, Beriman, Berwawasan Lingkungan dan Inovatif',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white70, fontSize: 11),
           ),

@@ -20,8 +20,6 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
   String? _pesan;
 
   // Tombol aktif hanya jika username dan password terisi dan tidak sedang memproses
-  bool get _canSubmit =>
-      _usernameC.text.trim().isNotEmpty && _passwordC.text.isNotEmpty && !_loading;
 
   @override
   void dispose() {
@@ -30,13 +28,30 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
     super.dispose();
   }
 
-  Future<void> _submit() async {
+    Future<void> _submit() async {
+    if (_loading) return; // cegah ketukan ganda
+
+    final username = _usernameC.text.trim();
+    final sandi = _passwordC.text;
+    if (username.isEmpty && sandi.isEmpty) {
+      setState(() => _pesan = 'NIP/Username dan kata sandi Silakan isi dulu.');
+      return;
+    }
+    if (username.isEmpty) {
+      setState(() => _pesan = 'NIP/Username belum diisi. Silakan isi dulu ya.');
+      return;
+    }
+    if (sandi.isEmpty) {
+      setState(() => _pesan = 'Kata sandi belum diisi. Silakan isi dulu ya.');
+      return;
+    }
+
     setState(() {
       _loading = true;
       _pesan = null;
     });
     try {
-      await AuthService.loginGuru(_usernameC.text.trim(), _passwordC.text);
+      await AuthService.loginGuru(username, sandi);
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const GuruMainScreen()),
@@ -72,7 +87,7 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
           hint: 'Masukkan NIP atau Username',
           controller: _usernameC,
           enabled: !_loading,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() => _pesan = null),
         ),
         const SizedBox(height: 20),
         AppTextField(
@@ -81,7 +96,7 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
           controller: _passwordC,
           isPassword: true,
           enabled: !_loading,
-          onChanged: (_) => setState(() {}),
+          onChanged: (_) => setState(() => _pesan = null),
         ),
         const SizedBox(height: 12),
         if (_pesan != null)
@@ -97,7 +112,7 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
         PrimaryButton(
           label: 'Masuk',
           loading: _loading,
-          onPressed: _canSubmit ? _submit : null,
+          onPressed: _submit,
         ),
         const SizedBox(height: 32),
         const Text(
