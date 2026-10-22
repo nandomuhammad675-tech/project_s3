@@ -16,7 +16,7 @@ import 'package:si_kesa/screens/guru/piket/piket_screen.dart';
 import 'package:si_kesa/screens/guru/absensi/absensi_screen.dart';
 import 'package:si_kesa/screens/guru/absensi/riwayat_screen.dart';
 import 'package:si_kesa/screens/guru/nilai/input_nilai_screen.dart';
-import 'package:si_kesa/screens/guru/nilai/rekap_nilai_screen.dart';
+import 'package:si_kesa/screens/guru/nilai/rekap_seluruh_siswa_screen.dart';
 import 'package:si_kesa/screens/guru/jadwal/jadwal_mengajar_screen.dart';
 import 'package:si_kesa/screens/guru/jadwal/jadwal_hari_ini_screen.dart';
 
@@ -84,9 +84,9 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
       );
       return;
     }
-              if (nama == 'Rekap Nilai') {
+    if (nama == 'Rekap Nilai') {
       Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const RekapNilaiGuruScreen()),
+        MaterialPageRoute(builder: (_) => const RekapSeluruhSiswaScreen()),
       );
       return;
     }

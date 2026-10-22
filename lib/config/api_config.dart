@@ -7,7 +7,7 @@ class ApiConfig {
 
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-        defaultValue: 'http://172.16.100.234/project_s3_web/backend/public',
+        defaultValue: 'http://172.16.103.245/project_s3_web/backend/public',
   );
 
   static const Duration timeout = Duration(seconds: 20);

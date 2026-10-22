@@ -81,7 +81,7 @@ class _RekapNilaiGuruScreenState extends State<RekapNilaiGuruScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LayarBerheader(title: 'Rekap Nilai', builder: _isiLayar),
+      body: LayarBerheader(title: 'Rekap Nilai Per Siswa', builder: _isiLayar),
     );
   }
 
