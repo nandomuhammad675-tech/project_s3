@@ -5,11 +5,13 @@ import 'package:si_kesa/models/absensi_model.dart';
 import 'package:si_kesa/services/absensi_service.dart';
 import 'package:si_kesa/services/api_client.dart';
 import 'package:si_kesa/utils/date_formatter.dart';
-import 'package:si_kesa/utils/ui_helper.dart';
 import 'package:si_kesa/widgets/empty_state.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/layar_berheader.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
+import 'package:si_kesa/services/guru_service.dart';
+import 'package:si_kesa/services/laporan_service.dart';
+import 'package:si_kesa/utils/berkas_helper.dart';
 
 /// Riwayat Absen Guru (hanya baca): pilih bulan, pilih tanggal, lihat status tiap siswa.
 /// Data dari GET /api/guru/absensi?date= (satu panggilan per tanggal yang dibuka).
@@ -30,6 +32,7 @@ class _RiwayatAbsenGuruScreenState extends State<RiwayatAbsenGuruScreen> {
   bool _memuat = true;
   String? _galat;
   int _versi = 0; // menolak jawaban lama bila tanggal diganti cepat
+    bool _mengunduh = false;
   final _gulir = ScrollController(); // deretan tanggal  // [1]
 
   static DateTime _tanpaJam(DateTime d) => DateTime(d.year, d.month, d.day);
@@ -162,6 +165,41 @@ class _RiwayatAbsenGuruScreenState extends State<RiwayatAbsenGuruScreen> {
   int _hitung(StatusKehadiran st) =>
       _data?.items.where((s) => s.status == st).length ?? 0;
 
+    void _info(String pesan) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(pesan)));
+  }
+
+  /// Unduh Excel laporan absensi satu semester (kelas sendiri), lalu buka menu Bagikan.
+  Future<void> _unduh() async {
+    if (_mengunduh) return; // cegah ketukan ganda
+    setState(() => _mengunduh = true);
+    try {
+      final guru = await GuruService.me();
+      final kelas = guru.kelas;
+      if (kelas == null || kelas.idTahunAjaran == 0) {
+        _info('Anda belum ditetapkan sebagai wali kelas pada tahun ajaran aktif.');
+        return;
+      }
+      final semester = kelas.semester == 'genap' ? 'genap' : 'ganjil';
+      final bytes = await LaporanService.unduh(
+        idTahunAjaran: kelas.idTahunAjaran,
+        semester: semester,
+        jenis: 'absensi',
+      );
+      if (!mounted) return;
+      await bagikanExcel(
+        bytes,
+        'Laporan-Absensi-$semester-${namaBerkasAman(kelas.tahunAjaran)}-${namaBerkasAman(kelas.nama)}.xlsx',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _info(pesanDariError(e));
+    } finally {
+      if (mounted) setState(() => _mengunduh = false);
+    }
+  }
   // ===================== Tampilan =====================
 
   @override
@@ -263,12 +301,18 @@ class _RiwayatAbsenGuruScreenState extends State<RiwayatAbsenGuruScreen> {
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         borderRadius: BorderRadius.circular(10),
-        onTap: () => tampilkanBelumTersedia(context, 'Export Laporan'),
+        onTap: _mengunduh ? null : _unduh,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(
             children: [
-              const Icon(Icons.file_download_outlined, color: Colors.white, size: 26),
+                            _mengunduh
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                    )
+                  : const Icon(Icons.file_download_outlined, color: Colors.white, size: 26),
               const SizedBox(width: 6),
               const Expanded(
                 child: Column(

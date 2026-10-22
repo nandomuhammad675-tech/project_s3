@@ -50,7 +50,7 @@ class _ProfilGuruScreenState extends State<ProfilGuruScreen> {
 
     await AuthService.keluar(); // hapus token tersimpan
     if (!mounted) return;
-    Navigator.of(context).pushAndRemoveUntil(
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );

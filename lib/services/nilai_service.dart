@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:si_kesa/models/mapel_model.dart';
 import 'package:si_kesa/models/nilai_guru_model.dart';
 import 'package:si_kesa/services/api_client.dart';
@@ -45,6 +47,19 @@ class NilaiService {
     return hasil;
   }
 
+   static Future<Uint8List> unduhRekapMapel({
+    required int idTahunAjaran,
+    required String semester,
+    required int idMapel,
+  }) {
+    return _api.unduhExcel('/api/guru/laporan/excel', query: {
+      'semester': semester,
+      'tahun_ajaran': '$idTahunAjaran',
+      'jenis': 'nilai',
+      'mapel': '$idMapel',
+    });
+  }
+  
   /// POST /api/guru/nilai. [nomorUh] hanya dikirim untuk jenis UH.
   static Future<void> tambah({
     required int idSiswa,

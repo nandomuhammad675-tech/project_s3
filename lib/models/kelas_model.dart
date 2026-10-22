@@ -1,10 +1,11 @@
 import 'package:si_kesa/utils/json_helper.dart';
 
 /// Kelas wali Guru pada tahun ajaran aktif.
-/// GET /api/guru/me: { guru, tahun_ajaran: {nama_tahun, semester}, kelas: {id_kelas, nama_kelas, ...} }
+/// GET /api/guru/me: { guru, tahun_ajaran: {id_tahun_ajaran, nama_tahun, semester}, kelas: {id_kelas, nama_kelas, ...} }
 class KelasModel {
   final int id;
   final String nama; // "6A"
+  final int idTahunAjaran; // 0 = tidak diketahui
   final String tahunAjaran; // "2026/2027"
   final String semester; // ganjil | genap
   final int? jumlahSiswaAktif; // null = belum atau gagal dimuat
@@ -12,6 +13,7 @@ class KelasModel {
   const KelasModel({
     this.id = 0,
     required this.nama,
+    this.idTahunAjaran = 0,
     required this.tahunAjaran,
     required this.semester,
     this.jumlahSiswaAktif,
@@ -22,6 +24,7 @@ class KelasModel {
       KelasModel(
         id: asInt(j['id_kelas'] ?? j['id']) ?? 0,
         nama: '${j['nama_kelas'] ?? j['nama'] ?? ''}',
+        idTahunAjaran: asInt(tahun?['id_tahun_ajaran'] ?? j['id_tahun_ajaran']) ?? 0,
         tahunAjaran: '${tahun?['nama_tahun'] ?? j['tahun_ajaran'] ?? ''}',
         semester: '${tahun?['semester'] ?? j['semester'] ?? ''}'.toLowerCase(),
         jumlahSiswaAktif: asInt(j['jumlah_siswa_aktif']),
@@ -30,6 +33,7 @@ class KelasModel {
   KelasModel denganJumlahSiswa(int? jumlah) => KelasModel(
         id: id,
         nama: nama,
+        idTahunAjaran: idTahunAjaran,
         tahunAjaran: tahunAjaran,
         semester: semester,
         jumlahSiswaAktif: jumlah,

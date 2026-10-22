@@ -13,6 +13,17 @@ class SubPageHeader extends StatelessWidget {
     this.onBack,
   });
 
+  /// Ada halaman sebelumnya: mundur satu halaman.
+  /// Halaman utama sebuah tab: sama dengan tombol kembali HP (pindah ke Home).
+  static void _kembali(BuildContext context) {
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop();
+      return;
+    }
+    Navigator.of(context, rootNavigator: true).maybePop();
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppHeader(
@@ -25,7 +36,7 @@ class SubPageHeader extends StatelessWidget {
               if (showBack)
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: onBack ?? () => Navigator.of(context).maybePop(),
+                  onTap: onBack ?? () => _kembali(context),
                   child: const Padding(
                     padding: EdgeInsets.only(right: 8),
                     child: Icon(

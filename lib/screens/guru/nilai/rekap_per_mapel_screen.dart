@@ -1,3 +1,7 @@
+import 'dart:io';
+
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_disiplin_model.dart';
@@ -9,7 +13,6 @@ import 'package:si_kesa/services/api_client.dart';
 import 'package:si_kesa/services/disiplin_service.dart';
 import 'package:si_kesa/services/guru_service.dart';
 import 'package:si_kesa/services/nilai_service.dart';
-import 'package:si_kesa/utils/ui_helper.dart';
 import 'package:si_kesa/widgets/empty_state.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/layar_berheader.dart';
@@ -44,6 +47,7 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
   bool _memuatNilai = false;
   String? _galatNilai;
   int _versi = 0; // menolak jawaban lama bila pilihan diganti cepat
+  bool _mengunduh = false;
 
   @override
   void initState() {
@@ -139,6 +143,57 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
     return '$label ${_kelas?.tahunAjaran ?? ''}'.trim();
   }
 
+    /// Unduh Excel rekap mapel terpilih, simpan sementara di HP, lalu buka menu Bagikan.
+  Future<void> _unduh() async {
+    if (_mengunduh) return; // cegah ketukan ganda
+    final kelas = _kelas;
+    final idMapel = _idMapel;
+    if (kelas == null || idMapel == null || kelas.idTahunAjaran == 0) {
+      _info('Data kelas belum lengkap. Tarik layar ke bawah untuk memuat ulang.');
+      return;
+    }
+    setState(() => _mengunduh = true);
+    try {
+      final bytes = await NilaiService.unduhRekapMapel(
+        idTahunAjaran: kelas.idTahunAjaran,
+        semester: _semester,
+        idMapel: idMapel,
+      );
+      final namaMapel = _mapel.where((m) => m.id == idMapel).map((m) => m.nama).firstOrNull ?? 'Mapel';
+      String aman(String s) => s.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-');
+      final namaFile =
+          'Rekap-${aman(namaMapel)}-$_semester-${aman(kelas.tahunAjaran)}-${aman(kelas.nama)}.xlsx';
+
+      final dir = await getTemporaryDirectory();
+      final berkas = File('${dir.path}/$namaFile');
+      await berkas.writeAsBytes(bytes, flush: true);
+      if (!mounted) return;
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            XFile(
+              berkas.path,
+              mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+              name: namaFile,
+            ),
+          ],
+          subject: namaFile,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _info(pesanDariError(e));
+    } finally {
+      if (mounted) setState(() => _mengunduh = false);
+    }
+  }
+
+  void _info(String pesan) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(pesan)));
+  }
   // ===================== Tampilan =====================
 
   @override
@@ -148,31 +203,40 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
     );
   }
 
-  Widget _isiLayar(double tinggiHeader) {
-    return RefreshIndicator(
-      color: AppColors.primary,
-      edgeOffset: tinggiHeader,
-      onRefresh: () => _muatAwal(tarik: true),
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(16, tinggiHeader + 16, 16, 24),
-        children: _isi(),
-      ),
+   Widget _isiLayar(double tinggiHeader) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        // Tinggi area kosong di bawah header, supaya loading/pesan tepat di tengah layar.
+        final tengah = (box.maxHeight - tinggiHeader - 16 - 24).clamp(200.0, double.infinity).toDouble();
+        return RefreshIndicator(
+          color: AppColors.primary,
+          edgeOffset: tinggiHeader,
+          onRefresh: () => _muatAwal(tarik: true),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(16, tinggiHeader + 16, 16, 24),
+            children: _isi(tengah),
+          ),
+        );
+      },
     );
   }
 
-  List<Widget> _isi() {
+    List<Widget> _isi(double tengah) {
     if (_memuat) {
-      return const [Padding(padding: EdgeInsets.symmetric(vertical: 60), child: LoadingIndicator())];
+      return [SizedBox(height: tengah, child: const LoadingIndicator())];
     }
     if (_galat != null) {
-      return [ErrorState(message: _galat!, onRetry: _muatAwal)];
+      return [SizedBox(height: tengah, child: ErrorState(message: _galat!, onRetry: _muatAwal))];
     }
     if (_kelas == null) {
-      return const [
-        EmptyState(
-          message: 'Anda belum ditetapkan sebagai wali kelas pada tahun ajaran aktif. Hubungi Admin.',
-          icon: Icons.info_outline,
+      return [
+        SizedBox(
+          height: tengah,
+          child: const EmptyState(
+            message: 'Anda belum ditetapkan sebagai wali kelas pada tahun ajaran aktif. Hubungi Admin.',
+            icon: Icons.info_outline,
+          ),
         ),
       ];
     }
@@ -444,27 +508,33 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
     );
   }
 
-  Widget _tombolUnduh() {
+    Widget _tombolUnduh() {
     return Material(
       color: AppColors.headerGreen,
       borderRadius: BorderRadius.circular(28),
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
-        onTap: () => tampilkanBelumTersedia(context, 'Unduh Laporan'),
+        onTap: _mengunduh ? null : _unduh,
         child: Container(
           height: 50,
           alignment: Alignment.center,
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.file_download_outlined, color: Colors.white, size: 22),
-              SizedBox(width: 8),
-              Text(
-                'Unduh Laporan',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
-              ),
-            ],
-          ),
+          child: _mengunduh
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                )
+              : const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.file_download_outlined, color: Colors.white, size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      'Unduh Laporan',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

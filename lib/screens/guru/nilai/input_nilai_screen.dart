@@ -290,25 +290,35 @@ class _InputNilaiGuruScreenState extends State<InputNilaiGuruScreen> {
     );
   }
 
-  Widget _isiLayar(double tinggiHeader) {
-    Widget isi;
-    if (_memuat) {
-      isi = const LoadingIndicator();
-    } else if (_galat != null) {
-      isi = ErrorState(message: _galat!, onRetry: _muatAwal);
-    } else if (_kelas == null) {
-      isi = const EmptyState(
-        message: 'Anda belum ditetapkan sebagai wali kelas pada tahun ajaran aktif. Hubungi Admin.',
-        icon: Icons.info_outline,
-      );
-    } else {
-      isi = _form();
-    }
+    Widget _isiLayar(double tinggiHeader) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        // Tinggi area kosong di bawah header, supaya loading/pesan tepat di tengah layar.
+        final tengah = (box.maxHeight - tinggiHeader - 16 - 24).clamp(200.0, double.infinity).toDouble();
 
-    return ListView(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      padding: EdgeInsets.fromLTRB(12, tinggiHeader + 16, 12, 24),
-      children: [isi],
+        Widget isi;
+        if (_memuat) {
+          isi = SizedBox(height: tengah, child: const LoadingIndicator());
+        } else if (_galat != null) {
+          isi = SizedBox(height: tengah, child: ErrorState(message: _galat!, onRetry: _muatAwal));
+        } else if (_kelas == null) {
+          isi = SizedBox(
+            height: tengah,
+            child: const EmptyState(
+              message: 'Anda belum ditetapkan sebagai wali kelas pada tahun ajaran aktif. Hubungi Admin.',
+              icon: Icons.info_outline,
+            ),
+          );
+        } else {
+          isi = _form();
+        }
+
+        return ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.fromLTRB(12, tinggiHeader + 16, 12, 24),
+          children: [isi],
+        );
+      },
     );
   }
 

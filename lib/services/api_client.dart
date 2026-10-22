@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:io' show SocketException;
 
 import 'package:http/http.dart' as http;
@@ -58,7 +59,30 @@ class ApiClient {
   
   Future<dynamic> delete(String path, {bool auth = true}) =>
       _kirim('DELETE', path, auth: auth);
+    /// Mengunduh berkas Excel (.xlsx) dari server. Gagal => ApiException dengan pesan dari server.
+  Future<Uint8List> unduhExcel(String path, {Map<String, String?>? query}) async {
+    final headers = <String, String>{'Accept': '*/*'};
+    final token = await tokenProvider?.call();
+    if (token != null) headers['Authorization'] = 'Bearer $token';
 
+    final http.Response res;
+    try {
+      res = await _client.get(_uri(path, query), headers: headers).timeout(const Duration(seconds: 60));
+    } on TimeoutException {
+      throw const ApiException('Server tidak merespons. Coba lagi.');
+    } on SocketException {
+      throw const ApiException('Tidak dapat terhubung ke server. Periksa koneksi internet.');
+    } on http.ClientException {
+      throw const ApiException('Tidak dapat terhubung ke server. Periksa koneksi internet.');
+    }
+
+    final jenis = res.headers['content-type'] ?? '';
+    if (res.statusCode == 200 && jenis.contains('spreadsheetml')) return res.bodyBytes;
+
+    _tangani(res, true); // gagal: melempar ApiException (401 ikut ditangani)
+    throw const ApiException('Terjadi gangguan, coba lagi.');
+  }
+  
   Uri _uri(String path, Map<String, String?>? query) {
     final params = <String, String>{};
     query?.forEach((k, v) {

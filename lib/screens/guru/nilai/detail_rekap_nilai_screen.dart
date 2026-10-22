@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_disiplin_model.dart';
@@ -7,15 +5,16 @@ import 'package:si_kesa/models/kelas_model.dart';
 import 'package:si_kesa/models/mapel_model.dart';
 import 'package:si_kesa/models/nilai_guru_model.dart';
 import 'package:si_kesa/services/api_client.dart';
+import 'package:si_kesa/services/laporan_service.dart';
 import 'package:si_kesa/services/nilai_service.dart';
-import 'package:si_kesa/utils/ui_helper.dart';
+import 'package:si_kesa/utils/berkas_helper.dart';
 import 'package:si_kesa/widgets/empty_state.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/layar_berheader.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
 
-/// Rincian nilai satu siswa pada semester berjalan: tab UH / ASTS / ASAS, baris per mata pelajaran.
-/// Hanya baca. Tombol Expor hanya tampilan (Laporan Excel tidak ada di aplikasi Guru, Dokumen 02 bagian 1.1).
+/// Rincian nilai satu siswa pada semester berjalan: satu tabel berisi semua mata pelajaran
+/// dengan kolom UH-1.., ASTS, dan ASAS. Hanya baca; tombol Expor mengunduh Excel nilai siswa ini.
 class DetailRekapNilaiScreen extends StatefulWidget {
   final SiswaKelasModel siswa;
   final KelasModel kelas;
@@ -27,15 +26,17 @@ class DetailRekapNilaiScreen extends StatefulWidget {
 }
 
 class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
-  static const _jenisList = ['UH', 'ASTS', 'ASAS'];
-  static const _lebarNilai = 52.0;
-  static const _lebarMapelMin = 130.0;
+  static const _lebarKiri = 150.0;
+  static const _lebarNilai = 56.0;
+  static const _tinggiKepala = 44.0;
+  static const _tinggiBaris = 60.0;
 
-  String _jenis = 'UH';
   List<MapelModel> _mapel = const [];
   List<NilaiGuruBaris> _nilai = const [];
+  Map<String, int> _peta = const {}; // kunci: "idMapel|UH|nomor" atau "idMapel|ASTS|0"
   bool _memuat = true;
   String? _galat;
+  bool _mengunduh = false;
 
   String get _semester => widget.kelas.semester == 'genap' ? 'genap' : 'ganjil';
 
@@ -63,9 +64,15 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
         NilaiService.daftar(idSiswa: widget.siswa.idSiswa, semester: _semester),
       ]);
       if (!mounted) return;
+      final nilai = h[1] as List<NilaiGuruBaris>;
+      final peta = <String, int>{};
+      for (final b in nilai) {
+        peta['${b.idMapel}|${b.jenis}|${b.jenis == 'UH' ? (b.nomorUh ?? 0) : 0}'] = b.nilai;
+      }
       setState(() {
         _mapel = h[0] as List<MapelModel>;
-        _nilai = h[1] as List<NilaiGuruBaris>;
+        _nilai = nilai;
+        _peta = peta;
         _memuat = false;
         _galat = null;
       });
@@ -78,23 +85,49 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
     }
   }
 
-  /// Label kolom untuk tab terpilih: UH-1..UH-n, atau satu kolom untuk ASTS/ASAS.
-  List<String> _kolom() {
-    if (_jenis != 'UH') return [_jenis];
-    var maks = 3; // desain menampilkan minimal UH-1 sampai UH-3
+  /// Jumlah kolom UH: minimal 3, bertambah bila ada UH dengan nomor lebih besar.
+  int get _jumlahUh {
+    var maks = 3;
     for (final b in _nilai) {
-      if (b.jenis == 'UH' && (b.nomorUh ?? 0) > maks && (b.nomorUh ?? 0) <= 50) maks = b.nomorUh!;
+      final n = b.nomorUh ?? 0;
+      if (b.jenis == 'UH' && n > maks && n <= 50) maks = n;
     }
-    return [for (var i = 1; i <= maks; i++) 'UH-$i'];
+    return maks;
   }
 
-  int? _nilaiDari(int idMapel, int indeksKolom) {
-    for (final b in _nilai) {
-      if (b.idMapel != idMapel || b.jenis != _jenis) continue;
-      if (_jenis == 'UH' && b.nomorUh != indeksKolom + 1) continue;
-      return b.nilai;
+  void _info(String pesan) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(pesan)));
+  }
+
+  /// Unduh Excel nilai siswa ini (semua mapel), lalu buka menu Bagikan.
+  Future<void> _unduh() async {
+    if (_mengunduh) return; // cegah ketukan ganda
+    final kelas = widget.kelas;
+    if (kelas.idTahunAjaran == 0) {
+      _info('Data kelas belum lengkap. Kembali ke daftar siswa lalu coba lagi.');
+      return;
     }
-    return null;
+    setState(() => _mengunduh = true);
+    try {
+      final bytes = await LaporanService.unduh(
+        idTahunAjaran: kelas.idTahunAjaran,
+        semester: _semester,
+        jenis: 'nilai',
+        idSiswa: widget.siswa.idSiswa,
+      );
+      if (!mounted) return;
+      await bagikanExcel(
+        bytes,
+        'Rekap-Nilai-${namaBerkasAman(widget.siswa.nama)}-$_semester-${namaBerkasAman(kelas.tahunAjaran)}.xlsx',
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _info(pesanDariError(e));
+    } finally {
+      if (mounted) setState(() => _mengunduh = false);
+    }
   }
 
   @override
@@ -114,9 +147,7 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
         padding: EdgeInsets.fromLTRB(16, tinggiHeader + 16, 16, 24),
         children: [
           _kartuSiswa(),
-          const SizedBox(height: 14),
-          _tab(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           _isiTabel(),
           const SizedBox(height: 18),
           _tombolExport(),
@@ -172,42 +203,6 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
     );
   }
 
-  Widget _tab() {
-    return Row(
-      children: [
-        for (var i = 0; i < _jenisList.length; i++) ...[
-          if (i > 0) const SizedBox(width: 10),
-          Expanded(child: _tombolTab(_jenisList[i])),
-        ],
-      ],
-    );
-  }
-
-  Widget _tombolTab(String jenis) {
-    final aktif = jenis == _jenis;
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: () => setState(() => _jenis = jenis),
-      child: Container(
-        height: 40,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: aktif ? AppColors.headerGreen : AppColors.white,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: aktif ? AppColors.headerGreen : AppColors.accentOrange),
-        ),
-        child: Text(
-          jenis,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: aktif ? Colors.white : AppColors.accentOrange,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _isiTabel() {
     if (_memuat) {
       return const Padding(padding: EdgeInsets.symmetric(vertical: 40), child: LoadingIndicator());
@@ -218,11 +213,28 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
     if (_mapel.isEmpty) {
       return const EmptyState(message: 'Belum ada mata pelajaran.');
     }
-    return _tabel();
+    return Column(
+      children: [
+        _tabel(),
+        if (_nilai.isEmpty)
+          const Padding(
+            padding: EdgeInsets.only(top: 10),
+            child: Text(
+              'Belum ada nilai pada semester ini.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _tabel() {
-    final kolom = _kolom();
+    final kolom = <(String, String, int)>[
+      for (var i = 1; i <= _jumlahUh; i++) ('UH-$i', 'UH', i),
+      ('ASTS', 'ASTS', 0),
+      ('ASAS', 'ASAS', 0),
+    ];
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
@@ -230,71 +242,102 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
         boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 2))],
       ),
       clipBehavior: Clip.antiAlias,
-      child: LayoutBuilder(
-        builder: (context, box) {
-          final lebarMapel = math.max(_lebarMapelMin, box.maxWidth - kolom.length * _lebarNilai);
-          final total = lebarMapel + kolom.length * _lebarNilai;
-          return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: total,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Kiri (tetap): Mata Pelajaran
+          Container(
+            width: _lebarKiri,
+            decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFEFEBDD)))),
+            child: Column(
+              children: [
+                _kepalaKiri(),
+                for (var i = 0; i < _mapel.length; i++) _barisKiri(_mapel[i], i == _mapel.length - 1),
+              ],
+            ),
+          ),
+          // Kanan (bisa digeser): UH-1.., ASTS, ASAS
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
               child: Column(
                 children: [
-                  _barisKepala(kolom, lebarMapel),
+                  _kepalaKanan(kolom),
                   for (var i = 0; i < _mapel.length; i++)
-                    _barisMapel(_mapel[i], kolom.length, lebarMapel, i == _mapel.length - 1),
+                    _barisKanan(_mapel[i], kolom, i == _mapel.length - 1),
                 ],
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _barisKepala(List<String> kolom, double lebarMapel) {
-    const gaya = TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textDark);
-    return Container(
-      color: AppColors.cardBeige,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          SizedBox(
-            width: lebarMapel,
-            child: const Padding(
-              padding: EdgeInsets.only(left: 12),
-              child: Text('Mata Pelajaran', style: gaya),
-            ),
           ),
-          for (final k in kolom)
-            SizedBox(width: _lebarNilai, child: Text(k, textAlign: TextAlign.center, style: gaya)),
         ],
       ),
     );
   }
 
-  Widget _barisMapel(MapelModel m, int jumlahKolom, double lebarMapel, bool terakhir) {
+  static const _gayaKepala =
+      TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textDark);
+
+  Widget _kepalaKiri() {
     return Container(
-      constraints: const BoxConstraints(minHeight: 46),
-      decoration: BoxDecoration(
-        border: terakhir ? null : const Border(bottom: BorderSide(color: Color(0xFFEFEBDD))),
-      ),
+      height: _tinggiKepala,
+      color: AppColors.cardBeige,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: const Text('Mata Pelajaran', style: _gayaKepala),
+    );
+  }
+
+  Widget _kepalaKanan(List<(String, String, int)> kolom) {
+    return Container(
+      height: _tinggiKepala,
+      color: AppColors.cardBeige,
       child: Row(
         children: [
-          SizedBox(
-            width: lebarMapel,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Text(
-                m.nama,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark),
-              ),
+          for (final k in kolom)
+            SizedBox(
+              width: _lebarNilai,
+              child: Text(k.$1, textAlign: TextAlign.center, style: _gayaKepala),
             ),
-          ),
-          for (var i = 0; i < jumlahKolom; i++)
-            SizedBox(width: _lebarNilai, child: Center(child: _sel(_nilaiDari(m.id, i)))),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration _garis(bool terakhir) => BoxDecoration(
+        border: terakhir ? null : const Border(bottom: BorderSide(color: Color(0xFFEFEBDD))),
+      );
+
+  Widget _barisKiri(MapelModel m, bool terakhir) {
+    return Container(
+      height: _tinggiBaris,
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: _garis(terakhir),
+      child: Text(
+        m.nama,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          fontSize: 11.5,
+          height: 1.2,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textDark,
+        ),
+      ),
+    );
+  }
+
+  Widget _barisKanan(MapelModel m, List<(String, String, int)> kolom, bool terakhir) {
+    return Container(
+      height: _tinggiBaris,
+      decoration: _garis(terakhir),
+      child: Row(
+        children: [
+          for (final k in kolom)
+            SizedBox(
+              width: _lebarNilai,
+              child: Center(child: _sel(_peta['${m.id}|${k.$2}|${k.$3}'])),
+            ),
         ],
       ),
     );
@@ -316,21 +359,27 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
       borderRadius: BorderRadius.circular(28),
       child: InkWell(
         borderRadius: BorderRadius.circular(28),
-        onTap: () => tampilkanBelumTersedia(context, 'Expor Nilai Siswa'),
+        onTap: _mengunduh ? null : _unduh,
         child: Container(
           height: 50,
           alignment: Alignment.center,
-          child: const Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.file_download_outlined, color: Colors.white, size: 22),
-              SizedBox(width: 8),
-              Text(
-                'Expor Nilai Siswa',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
-              ),
-            ],
-          ),
+          child: _mengunduh
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                )
+              : const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.file_download_outlined, color: Colors.white, size: 22),
+                    SizedBox(width: 8),
+                    Text(
+                      'Expor Nilai Siswa',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

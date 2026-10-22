@@ -270,39 +270,49 @@ class _JadwalMengajarGuruScreenState extends State<JadwalMengajarGuruScreen> {
     );
   }
 
-  Widget _isiLayar(double tinggiHeader) {
-    Widget isi;
-    if (_memuat) {
-      isi = const Padding(padding: EdgeInsets.symmetric(vertical: 40), child: LoadingIndicator());
-    } else if (_galat != null) {
-      isi = ErrorState(message: _galat!, onRetry: _muat);
-    } else if (_kelas == null) {
-      isi = const EmptyState(
-        message: 'Anda belum ditetapkan sebagai wali kelas pada tahun ajaran aktif. Hubungi Admin.',
-        icon: Icons.info_outline,
-      );
-    } else {
-      isi = Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _kartuForm(),
-          const SizedBox(height: 14),
-          _kartuMingguan(),
-        ],
-      );
-    }
+    Widget _isiLayar(double tinggiHeader) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        // Tinggi area kosong di bawah header, supaya loading/pesan tepat di tengah layar.
+        final tengah = (box.maxHeight - tinggiHeader - 16 - 24).clamp(200.0, double.infinity).toDouble();
 
-    return RefreshIndicator(
-      color: AppColors.primary,
-      edgeOffset: tinggiHeader,
-      onRefresh: () => _muat(tarik: true),
-      child: ListView(
-        controller: _gulir,
-        physics: const AlwaysScrollableScrollPhysics(),
-        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: EdgeInsets.fromLTRB(16, tinggiHeader + 16, 16, 24),
-        children: [isi],
-      ),
+        Widget isi;
+        if (_memuat) {
+          isi = SizedBox(height: tengah, child: const LoadingIndicator());
+        } else if (_galat != null) {
+          isi = SizedBox(height: tengah, child: ErrorState(message: _galat!, onRetry: _muat));
+        } else if (_kelas == null) {
+          isi = SizedBox(
+            height: tengah,
+            child: const EmptyState(
+              message: 'Anda belum ditetapkan sebagai wali kelas pada tahun ajaran aktif. Hubungi Admin.',
+              icon: Icons.info_outline,
+            ),
+          );
+        } else {
+          isi = Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _kartuForm(),
+              const SizedBox(height: 14),
+              _kartuMingguan(),
+            ],
+          );
+        }
+
+        return RefreshIndicator(
+          color: AppColors.primary,
+          edgeOffset: tinggiHeader,
+          onRefresh: () => _muat(tarik: true),
+          child: ListView(
+            controller: _gulir,
+            physics: const AlwaysScrollableScrollPhysics(),
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.fromLTRB(16, tinggiHeader + 16, 16, 24),
+            children: [isi],
+          ),
+        );
+      },
     );
   }
 
