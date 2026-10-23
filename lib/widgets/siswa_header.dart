@@ -19,7 +19,7 @@ class SiswaHeader extends StatelessWidget {
             ),
           ),
           Text(
-            'Selamat Datang SI-KESA',
+            'Selamat Datang Di SI-KESA',
             style: TextStyle(
               color: Colors.white,
               fontSize: 15,
@@ -28,7 +28,7 @@ class SiswaHeader extends StatelessWidget {
           ),
           SizedBox(height: 2),
           Text(
-            'Semoga Harimu Menyenangkan!',
+            'Semoga Hari Ini Menyenangkan!',
             style: TextStyle(color: Colors.white, fontSize: 11),
           ),
         ],

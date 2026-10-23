@@ -31,7 +31,7 @@ class LoginHeader extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           const Text(
-            'SDN Negeri Kedungsari 1',
+            'SD Negeri Kedungsari 1',
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,

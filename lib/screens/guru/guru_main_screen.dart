@@ -5,6 +5,7 @@ import 'package:si_kesa/screens/guru/dashboard_screen.dart';
 import 'package:si_kesa/screens/guru/jadwal/jadwal_mengajar_screen.dart';
 import 'package:si_kesa/screens/guru/profil/profil_screen.dart';
 import 'package:si_kesa/widgets/guru_bottom_nav.dart';
+import 'package:si_kesa/widgets/guru_shell_scope.dart';
 
 /// Kerangka aplikasi Guru: bilah bawah (Home, Jadwal, Absen, Profil) selalu tampil.
 /// Tiap tab punya Navigator sendiri, jadi halaman fitur yang dibuka dari tab itu
@@ -43,7 +44,7 @@ class _GuruMainScreenState extends State<GuruMainScreen> {
         _ => const ProfilGuruScreen(),
       };
 
-  /// Ketuk ikon tab: tampilkan halaman utama tab itu.
+  /// Tampilkan halaman utama tab [i] (dipakai ikon bilah bawah dan menu di Beranda).
   void _pindah(int i) {
     _kunci[i].currentState?.popUntil((r) => r.isFirst);
     if (i != _index) {
@@ -74,31 +75,34 @@ class _GuruMainScreenState extends State<GuruMainScreen> {
     // -1 = tidak ada ikon yang menyala (sedang di dalam halaman fitur).
     final ikonAktif = _kedalaman[_index] > 0 ? -1 : _index;
 
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _kembali();
-      },
-      child: Scaffold(
-        resizeToAvoidBottomInset: false, // keyboard ditangani Scaffold di tiap halaman
-        body: IndexedStack(
-          index: _index,
-          children: [
-            for (var i = 0; i < _jumlahTab; i++)
-              if (_dibuka[i])
-                Navigator(
-                  key: _kunci[i],
-                  observers: [_pengamat[i]],
-                  onGenerateRoute: (_) => MaterialPageRoute(
-                    builder: (_) => _halamanUtama(i),
-                  ),
-                )
-              else
-                const SizedBox.shrink(),
-          ],
+    return GuruShellScope(
+      onPindah: _pindah,
+      child: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _kembali();
+        },
+        child: Scaffold(
+          resizeToAvoidBottomInset: false, // keyboard ditangani Scaffold di tiap halaman
+          body: IndexedStack(
+            index: _index,
+            children: [
+              for (var i = 0; i < _jumlahTab; i++)
+                if (_dibuka[i])
+                  Navigator(
+                    key: _kunci[i],
+                    observers: [_pengamat[i]],
+                    onGenerateRoute: (_) => MaterialPageRoute(
+                      builder: (_) => _halamanUtama(i),
+                    ),
+                  )
+                else
+                  const SizedBox.shrink(),
+            ],
+          ),
+          bottomNavigationBar:
+              keyboardTerbuka ? null : GuruBottomNav(currentIndex: ikonAktif, onTap: _pindah),
         ),
-        bottomNavigationBar:
-            keyboardTerbuka ? null : GuruBottomNav(currentIndex: ikonAktif, onTap: _pindah),
       ),
     );
   }

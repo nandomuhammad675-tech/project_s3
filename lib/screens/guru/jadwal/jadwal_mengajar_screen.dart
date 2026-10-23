@@ -572,7 +572,7 @@ class _JadwalMengajarGuruScreenState extends State<JadwalMengajarGuruScreen> {
     );
   }
 
-  Widget _tombolForm(bool mengubah) {
+    Widget _tombolForm(bool mengubah) {
     final simpan = SizedBox(
       height: 46,
       child: ElevatedButton(
@@ -599,40 +599,56 @@ class _JadwalMengajarGuruScreenState extends State<JadwalMengajarGuruScreen> {
     );
     if (!mengubah) return simpan;
 
-    return Row(
+    // Mode ubah: Perbarui selebar form, Batal dan Hapus berdampingan di bawahnya.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(
-          child: SizedBox(
-            height: 46,
-            child: OutlinedButton(
-              onPressed: _menyimpan ? null : _hapus,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.accentRed,
-                side: const BorderSide(color: AppColors.accentRed),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        simpan,
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 44,
+                child: OutlinedButton(
+                  onPressed: _menyimpan ? null : _kosongkanForm,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.textDark,
+                    backgroundColor: AppColors.white,
+                    side: const BorderSide(color: AppColors.border),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text(
+                    'Batal',
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  ),
+                ),
               ),
-              child: const Text('Hapus', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: SizedBox(
-            height: 46,
-            child: OutlinedButton(
-              onPressed: _menyimpan ? null : _kosongkanForm,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.textDark,
-                backgroundColor: AppColors.white,
-                side: const BorderSide(color: AppColors.border),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: SizedBox(
+                height: 44,
+                child: OutlinedButton(
+                  onPressed: _menyimpan ? null : _hapus,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.accentRed,
+                    side: const BorderSide(color: AppColors.accentRed),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text(
+                    'Hapus',
+                    maxLines: 1,
+                    softWrap: false,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ),
-              child: const Text('Batal', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
             ),
-          ),
+          ],
         ),
-        const SizedBox(width: 8),
-        Expanded(flex: 2, child: simpan),
       ],
     );
   }

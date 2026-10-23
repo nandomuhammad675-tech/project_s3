@@ -1,6 +1,5 @@
 import 'package:si_kesa/models/guru_model.dart';
 import 'package:si_kesa/services/api_client.dart';
-import 'package:si_kesa/utils/json_helper.dart';
 
 /// Endpoint Guru yang umum. Scope kelas selalu dari token di server (tidak ada id_kelas dari layar).
 class GuruService {

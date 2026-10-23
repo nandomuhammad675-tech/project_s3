@@ -13,12 +13,11 @@ import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/screens/guru/disiplin/form_screen.dart';
 import 'package:si_kesa/screens/guru/disiplin/rekap_screen.dart';
 import 'package:si_kesa/screens/guru/piket/piket_screen.dart';
-import 'package:si_kesa/screens/guru/absensi/absensi_screen.dart';
 import 'package:si_kesa/screens/guru/absensi/riwayat_screen.dart';
 import 'package:si_kesa/screens/guru/nilai/input_nilai_screen.dart';
 import 'package:si_kesa/screens/guru/nilai/rekap_seluruh_siswa_screen.dart';
-import 'package:si_kesa/screens/guru/jadwal/jadwal_mengajar_screen.dart';
 import 'package:si_kesa/screens/guru/jadwal/jadwal_hari_ini_screen.dart';
+import 'package:si_kesa/widgets/guru_shell_scope.dart';
 
 /// Beranda Guru. Memanggil GET /api/guru/me (Dokumen 02 bagian 2.4):
 /// - kelas terisi  : menu Akses Cepat dan jadwal hari ini
@@ -71,10 +70,8 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
 
   // TODO: ganti dengan Navigator.push ke layar fitur bila sudah dibuat.
         void _buka(String nama) {
-              if (nama == 'Jadwal Mengajar') {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const JadwalMengajarGuruScreen()),
-      );
+    if (nama == 'Jadwal Mengajar') {
+      GuruShellScope.pindahTab(context, 1); // tab Jadwal
       return;
     }
     if (nama == 'Jadwal') {
@@ -96,10 +93,8 @@ class _GuruDashboardScreenState extends State<GuruDashboardScreen> {
       );
       return;
     }
-      if (nama == 'Absensi Harian') {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const AbsensiGuruScreen()),
-      );
+    if (nama == 'Absensi Harian') {
+      GuruShellScope.pindahTab(context, 2); // tab Absen
       return;
     }
        if (nama == 'Riwayat Absen') {
