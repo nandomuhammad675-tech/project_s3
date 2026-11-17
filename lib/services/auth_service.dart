@@ -52,6 +52,47 @@ class AuthService {
     await _simpanToken(StorageKeys.guruToken, StorageKeys.guruHabisPada, data);
   }
 
+  // ===================== Akun tersimpan (isi otomatis di layar login) =====================
+
+  // Disimpan di secure storage (Keystore/Keychain) dan sengaja TIDAK dihapus oleh keluar(),
+  // supaya setelah logout kolom login terisi lagi. Gagal menyimpan tidak boleh menggagalkan login.
+
+  static Future<void> simpanAkunGuru(String username, String password) async {
+    try {
+      await _storage.write(key: StorageKeys.guruUsernameTersimpan, value: username);
+      await _storage.write(key: StorageKeys.guruPasswordTersimpan, value: password);
+    } catch (_) {}
+  }
+
+  static Future<({String username, String password})?> bacaAkunGuru() async {
+    try {
+      final u = await _storage.read(key: StorageKeys.guruUsernameTersimpan);
+      final p = await _storage.read(key: StorageKeys.guruPasswordTersimpan);
+      if (u == null || p == null) return null;
+      return (username: u, password: p);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static Future<void> simpanAkunWali(String nisn, String password) async {
+    try {
+      await _storage.write(key: StorageKeys.waliNisnTersimpan, value: nisn);
+      await _storage.write(key: StorageKeys.waliPasswordTersimpan, value: password);
+    } catch (_) {}
+  }
+
+  static Future<({String nisn, String password})?> bacaAkunWali() async {
+    try {
+      final n = await _storage.read(key: StorageKeys.waliNisnTersimpan);
+      final p = await _storage.read(key: StorageKeys.waliPasswordTersimpan);
+      if (n == null || p == null) return null;
+      return (nisn: n, password: p);
+    } catch (_) {
+      return null;
+    }
+  }
+
   // ===================== Bersama =====================
 
   static Future<void> _simpanToken(

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/screens/auth/login_screen.dart';
-import 'package:si_kesa/screens/guru/guru_main_screen.dart';
-import 'package:si_kesa/screens/wali/siswa_main_screen.dart';
+import 'package:si_kesa/screens/splash/splash_screen.dart';
 import 'package:si_kesa/services/api_client.dart';
 import 'package:si_kesa/services/auth_service.dart';
 
@@ -47,37 +46,7 @@ class SiKesaApp extends StatelessWidget {
       theme: AppTheme.light,
       navigatorKey: _navigatorKey,
       scaffoldMessengerKey: _messengerKey,
-      home: const _GerbangAwal(),
-    );
-  }
-}
-
-/// Layar pertama: ada token Guru -> portal Guru, ada token Wali -> portal Wali, selain itu ke login.
-/// Token yang sudah mati ketahuan di layar berikutnya (401 -> kembali ke Login).
-class _GerbangAwal extends StatefulWidget {
-  const _GerbangAwal();
-
-  @override
-  State<_GerbangAwal> createState() => _GerbangAwalState();
-}
-
-class _GerbangAwalState extends State<_GerbangAwal> {
-  late final Future<Peran?> _sesi = AuthService.peran();
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Peran?>(
-      future: _sesi,
-      builder: (context, snap) {
-        if (snap.connectionState != ConnectionState.done) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        return switch (snap.data) {
-          Peran.guru => const GuruMainScreen(),
-          Peran.wali => const SiswaMainScreen(),
-          null => const LoginScreen(),
-        };
-      },
+      home: const SplashScreen(),
     );
   }
 }

@@ -4,7 +4,7 @@
     <!-- usesCleartextTraffic hanya untuk pengembangan (http ke XAMPP). HAPUS saat produksi memakai HTTPS. -->
     <application
         android:usesCleartextTraffic="true"
-        android:label="project_s3"
+        android:label="SI-KESA"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

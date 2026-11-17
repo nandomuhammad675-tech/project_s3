@@ -22,6 +22,21 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
   // Tombol aktif hanya jika username dan password terisi dan tidak sedang memproses
 
   @override
+  void initState() {
+    super.initState();
+    _isiDariTersimpan();
+  }
+
+  /// Isi otomatis username & sandi dari login Guru sebelumnya.
+  Future<void> _isiDariTersimpan() async {
+    final akun = await AuthService.bacaAkunGuru();
+    if (akun == null || !mounted) return;
+    // Jangan menimpa kalau pengguna sudah keburu mengetik.
+    if (_usernameC.text.isEmpty) _usernameC.text = akun.username;
+    if (_passwordC.text.isEmpty) _passwordC.text = akun.password;
+  }
+
+  @override
   void dispose() {
     _usernameC.dispose();
     _passwordC.dispose();
@@ -52,6 +67,7 @@ class _GuruLoginFormState extends State<GuruLoginForm> {
     });
     try {
       await AuthService.loginGuru(username, sandi);
+      await AuthService.simpanAkunGuru(username, sandi); // hanya disimpan kalau login berhasil
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const GuruMainScreen()),

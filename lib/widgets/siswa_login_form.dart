@@ -27,6 +27,21 @@ class _WaliLoginFormState extends State<WaliLoginForm> {
   // Tombol aktif jika NISN tepat 10 digit, kata sandi terisi, dan tidak sedang memproses
 
   @override
+  void initState() {
+    super.initState();
+    _isiDariTersimpan();
+  }
+
+  /// Isi otomatis NISN & sandi dari login Siswa sebelumnya.
+  Future<void> _isiDariTersimpan() async {
+    final akun = await AuthService.bacaAkunWali();
+    if (akun == null || !mounted) return;
+    // Jangan menimpa kalau pengguna sudah keburu mengetik.
+    if (_nisnC.text.isEmpty) _nisnC.text = akun.nisn;
+    if (_passwordC.text.isEmpty) _passwordC.text = akun.password;
+  }
+
+  @override
   void dispose() {
     _nisnC.dispose();
     _passwordC.dispose();
@@ -66,6 +81,7 @@ class _WaliLoginFormState extends State<WaliLoginForm> {
     });
     try {
       await AuthService.loginWali(nisn);
+      await AuthService.simpanAkunWali(nisn, sandi); // hanya disimpan kalau login berhasil
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => const SiswaMainScreen()),
