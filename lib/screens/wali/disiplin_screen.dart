@@ -55,18 +55,16 @@ Positioned.fill(child: FutureBuilder<_Data>(
                 final data = [...d.items]..sort((a, b) => b.tanggal.compareTo(a.tanggal));
 
                 return ListView(
-                  padding: EdgeInsets.fromLTRB(20, 28 + tinggi, 20, 24),
+                  padding: EdgeInsets.fromLTRB(20, 24 + tinggi, 20, 24),
                   children: [
-                    const Text(
-                      'Rekap Kedisiplinan Siswa',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.headerGreen,
+                    if (data.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 2, bottom: 2),
+                        child: Text(
+                          '${data.length} catatan',
+                          style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 24),
                     if (data.isEmpty)
                       const Padding(
                         padding: EdgeInsets.symmetric(vertical: 48),
@@ -90,44 +88,60 @@ Positioned(top: 0, left: 0, right: 0, child: SubPageHeader(title: 'Rekap Kedisip
 
   Widget _item(String nama, DisiplinModel d) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.border),
+        boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 6, offset: Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Nama siswa: paling menonjol
           Text(
             nama,
             style: const TextStyle(
               fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textHint,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            d.jenisPelanggaran,
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               color: AppColors.textDark,
             ),
           ),
+          const SizedBox(height: 8),
+          // Jenis pelanggaran sebagai label berwarna
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.accentRed.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              d.jenisPelanggaran,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.accentRed,
+              ),
+            ),
+          ),
           if (d.catatan.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               d.catatan,
-              style: const TextStyle(fontSize: 13, color: AppColors.textDark),
+              style: const TextStyle(fontSize: 13, height: 1.35, color: AppColors.textDark),
             ),
           ],
-          const SizedBox(height: 6),
-          Text(
-            DateFormatter.lengkap(d.tanggal),
-            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.textMuted),
+              const SizedBox(width: 5),
+              Text(
+                DateFormatter.lengkap(d.tanggal),
+                style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+              ),
+            ],
           ),
         ],
       ),

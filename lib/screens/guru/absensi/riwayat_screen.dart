@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/absensi_guru_model.dart';
 import 'package:si_kesa/models/absensi_model.dart';
@@ -165,10 +166,8 @@ class _RiwayatAbsenGuruScreenState extends State<RiwayatAbsenGuruScreen> {
   int _hitung(StatusKehadiran st) =>
       _data?.items.where((s) => s.status == st).length ?? 0;
 
-    void _info(String pesan) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(pesan)));
+    void _info(String pesan, {JenisNotifikasi jenis = JenisNotifikasi.info}) {
+    tampilkanNotifikasi(context, pesan, jenis: jenis);
   }
 
   /// Unduh Excel laporan absensi satu semester (kelas sendiri), lalu buka menu Bagikan.
@@ -179,7 +178,7 @@ class _RiwayatAbsenGuruScreenState extends State<RiwayatAbsenGuruScreen> {
       final guru = await GuruService.me();
       final kelas = guru.kelas;
       if (kelas == null || kelas.idTahunAjaran == 0) {
-        _info('Anda belum ditetapkan sebagai wali kelas pada tahun ajaran aktif.');
+        _info('Anda belum ditetapkan sebagai wali kelas pada tahun ajaran aktif.', jenis: JenisNotifikasi.peringatan);
         return;
       }
       final semester = kelas.semester == 'genap' ? 'genap' : 'ganjil';
@@ -195,7 +194,7 @@ class _RiwayatAbsenGuruScreenState extends State<RiwayatAbsenGuruScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      _info(pesanDariError(e));
+      _info(pesanDariError(e), jenis: JenisNotifikasi.gagal);
     } finally {
       if (mounted) setState(() => _mengunduh = false);
     }

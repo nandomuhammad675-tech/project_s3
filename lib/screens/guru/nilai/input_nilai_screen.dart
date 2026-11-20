@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:flutter/services.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_disiplin_model.dart';
@@ -167,17 +168,15 @@ class _InputNilaiGuruScreenState extends State<InputNilaiGuruScreen> {
 
   // ===================== Aksi =====================
 
-  void _info(String pesan) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(pesan)));
+  void _info(String pesan, {JenisNotifikasi jenis = JenisNotifikasi.info}) {
+    tampilkanNotifikasi(context, pesan, jenis: jenis);
   }
 
   Future<void> _simpan() async {
     if (_menyimpan) return; // cegah ketukan ganda
     final idMapel = _idMapel;
     if (idMapel == null) {
-      _info('Pilih mata pelajaran terlebih dahulu.');
+      _info('Pilih mata pelajaran terlebih dahulu.', jenis: JenisNotifikasi.peringatan);
       return;
     }
 
@@ -210,11 +209,11 @@ class _InputNilaiGuruScreenState extends State<InputNilaiGuruScreen> {
       _salah = salah;
     });
     if (salah.isNotEmpty) {
-      _info('Periksa nilai yang bertanda merah.');
+      _info('Periksa nilai yang bertanda merah.', jenis: JenisNotifikasi.peringatan);
       return;
     }
     if (tugas.isEmpty) {
-      _info('Belum ada nilai yang diisi atau diubah.');
+      _info('Belum ada nilai yang diisi atau diubah.', jenis: JenisNotifikasi.info);
       return;
     }
 
@@ -251,7 +250,7 @@ class _InputNilaiGuruScreenState extends State<InputNilaiGuruScreen> {
     await _muatNilai(senyap: true);
     if (!mounted) return;
     setState(() {});
-    _info(gagal == 0 ? 'Nilai tersimpan' : 'Belum tersimpan ($gagal siswa). $pesanGagal');
+    _info(gagal == 0 ? 'Nilai tersimpan' : 'Belum tersimpan ($gagal siswa). $pesanGagal', jenis: gagal == 0 ? JenisNotifikasi.berhasil : JenisNotifikasi.gagal);
   }
 
   Future<void> _hapus(SiswaKelasModel s, NilaiGuruBaris b) async {
@@ -274,10 +273,10 @@ class _InputNilaiGuruScreenState extends State<InputNilaiGuruScreen> {
       await _muatNilai(senyap: true);
       if (!mounted) return;
       setState(() {});
-      _info('Nilai UH dihapus');
+      _info('Nilai UH dihapus', jenis: JenisNotifikasi.berhasil);
     } catch (e) {
       if (!mounted) return;
-      _info(pesanDariError(e));
+      _info(pesanDariError(e), jenis: JenisNotifikasi.gagal);
     }
   }
 
@@ -508,30 +507,37 @@ class _InputNilaiGuruScreenState extends State<InputNilaiGuruScreen> {
     if (_siswa.isEmpty) {
       return const EmptyState(message: 'Belum ada siswa aktif di kelas ini.');
     }
+    final tampilHapus = _jenis == 'UH'; // ikon hapus hanya untuk UH
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
         boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 2))],
       ),
       clipBehavior: Clip.antiAlias,
-      child: Column(
+      child: Table(
+        // Garis tabel: horizontal dan vertikal di antara semua sel.
+        border: const TableBorder.symmetric(
+          inside: BorderSide(color: AppColors.border, width: 1),
+        ),
+        defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+        columnWidths: {
+          0: const FixedColumnWidth(48),
+          1: const FlexColumnWidth(),
+          // Kolom Nilai memuat kotak nilai, dan (khusus UH) ikon hapus di sebelahnya.
+          2: FixedColumnWidth(tampilHapus ? 124 : 88),
+        },
         children: [
-          Container(
-            color: AppColors.cardBeige,
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: const Row(
-              children: [
-                SizedBox(width: 34, child: Text('No.', style: _gayaKepala)),
-                Expanded(child: Text('Nama Siswa', style: _gayaKepala)),
-                SizedBox(
-                  width: 96,
-                  child: Text('Nilai', textAlign: TextAlign.center, style: _gayaKepala),
-                ),
-              ],
-            ),
+          TableRow(
+            decoration: const BoxDecoration(color: AppColors.cardBeige),
+            children: [
+              _selKepala('No.', tengah: true),
+              _selKepala('Nama Siswa'),
+              _selKepala('Nilai', tengah: true),
+            ],
           ),
-          for (var i = 0; i < _siswa.length; i++) _baris(_siswa[i], i, i == _siswa.length - 1),
+          for (var i = 0; i < _siswa.length; i++) _baris(_siswa[i], i, tampilHapus),
         ],
       ),
     );
@@ -540,93 +546,105 @@ class _InputNilaiGuruScreenState extends State<InputNilaiGuruScreen> {
   static const _gayaKepala =
       TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textDark);
 
-  Widget _baris(SiswaKelasModel s, int i, bool terakhir) {
+  /// Sel judul kolom. Padding sama dengan sel isi supaya teks lurus dengan baris di bawahnya.
+  Widget _selKepala(String teks, {bool tengah = false}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: tengah ? 4 : 10, vertical: 12),
+      child: Align(
+        alignment: tengah ? Alignment.center : Alignment.centerLeft,
+        child: Text(teks, maxLines: 1, softWrap: false, style: _gayaKepala),
+      ),
+    );
+  }
+
+  TableRow _baris(SiswaKelasModel s, int i, bool tampilHapus) {
     final salah = _salah[s.idSiswa];
     final ada = _cari(s.idSiswa);
     final bisaHapus = _jenis == 'UH' && ada != null;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        border: terakhir ? null : const Border(bottom: BorderSide(color: Color(0xFFEFEBDD))),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 34,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 10),
-              child: Text(
-                '${s.nomorAbsen ?? i + 1}.',
-                style: const TextStyle(fontSize: 13, color: AppColors.textDark),
-              ),
+    return TableRow(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+          child: Center(
+            child: Text(
+              '${s.nomorAbsen ?? i + 1}.',
+              style: const TextStyle(fontSize: 13, color: AppColors.textDark),
             ),
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 8, right: 6),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    s.nama,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textDark,
-                    ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.nama,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textDark,
                   ),
-                  if (salah != null)
-                    Text(salah, style: const TextStyle(fontSize: 11, color: AppColors.accentRed)),
-                ],
+                ),
+                if (salah != null)
+                  Text(salah, style: const TextStyle(fontSize: 11, color: AppColors.accentRed)),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+            controller: _isi[s.idSiswa],
+            enabled: !_menyimpan,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            maxLength: 3,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+            onChanged: (_) {
+              if (_salah.containsKey(s.idSiswa)) setState(() => _salah.remove(s.idSiswa));
+            },
+            decoration: InputDecoration(
+              isDense: true,
+              counterText: '',
+              // Tanpa hintText: tanda "-" dulu menimpa kursor saat mengetik.
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: salah != null ? AppColors.accentRed : AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: salah != null ? AppColors.accentRed : AppColors.border),
               ),
             ),
           ),
-          SizedBox(
-            width: 56,
-            child: TextField(
-              controller: _isi[s.idSiswa],
-              enabled: !_menyimpan,
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              maxLength: 3,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
-              onChanged: (_) {
-                if (_salah.containsKey(s.idSiswa)) setState(() => _salah.remove(s.idSiswa));
-              },
-              decoration: InputDecoration(
-                isDense: true,
-                counterText: '',
-                hintText: '-',
-                contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: salah != null ? AppColors.accentRed : AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: salah != null ? AppColors.accentRed : AppColors.border),
-                ),
               ),
-            ),
+              if (tampilHapus)
+                SizedBox(
+                  width: 36,
+                  height: 40,
+                  child: bisaHapus
+                      ? IconButton(
+                          padding: EdgeInsets.zero,
+                          tooltip: 'Hapus nilai UH',
+                          icon: const Icon(Icons.delete_outline, color: AppColors.accentRed, size: 22),
+                          onPressed: _menyimpan ? null : () => _hapus(s, ada),
+                        )
+                      : null,
+                ),
+            ],
           ),
-          SizedBox(
-            width: 40,
-            height: 40,
-            child: bisaHapus
-                ? IconButton(
-                    padding: EdgeInsets.zero,
-                    tooltip: 'Hapus nilai UH',
-                    icon: const Icon(Icons.delete_outline, color: AppColors.accentRed, size: 22),
-                    onPressed: _menyimpan ? null : () => _hapus(s, ada),
-                  )
-                : null,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

@@ -8,6 +8,7 @@ import 'package:si_kesa/services/wali_service.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/app_header.dart';
+import 'package:si_kesa/widgets/dialog_keluar.dart';
 import 'package:si_kesa/widgets/sub_page_header.dart';
 
 class ProfilSiswaScreen extends StatefulWidget {
@@ -31,26 +32,7 @@ class _ProfilSiswaScreenState extends State<ProfilSiswaScreen> {
 
   Future<void> _keluar() async {
     // Konfirmasi dulu (sesuai dokumen)
-    final yakin = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Keluar akun?'),
-        content: const Text('Anda harus masuk lagi untuk membuka aplikasi.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text(
-              'Keluar',
-              style: TextStyle(color: Color(0xFFFF0000)),
-            ),
-          ),
-        ],
-      ),
-    );
+    final yakin = await tampilkanDialogKeluar(context);
 
     if (yakin != true) return;
     await AuthService.keluar(); // hapus token tersimpan

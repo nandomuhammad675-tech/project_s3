@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_disiplin_model.dart';
 import 'package:si_kesa/services/api_client.dart';
@@ -160,9 +161,7 @@ class _DisiplinGuruScreenState extends State<DisiplinGuruScreen> {
       await DisiplinService.tambah(idSiswa: _idSiswa!, tanggal: _tanggal, jenis: jenis, catatan: isi);
       if (!mounted) return;
       _kosongkanForm();
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('Catatan kedisiplinan tersimpan.')));
+      tampilkanNotifikasi(context, 'Catatan kedisiplinan tersimpan.', jenis: JenisNotifikasi.berhasil);
       await _muat(senyap: true); // segarkan angka di atas
     } catch (e) {
       if (!mounted) return;
@@ -187,7 +186,10 @@ class _DisiplinGuruScreenState extends State<DisiplinGuruScreen> {
     @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: LayarBerheader(title: 'Kedisiplinan', builder: _isiLayar),
+      body: LayarBerheader(
+        title: _mengubah ? 'Ubah Kedisiplinan' : 'Kedisiplinan',
+        builder: _isiLayar,
+      ),
     );
   }
 

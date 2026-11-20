@@ -35,5 +35,20 @@ class AppTheme {
           seedColor: AppColors.primary,
           primary: AppColors.primary,
         ),
+        // Notifikasi (SnackBar) di seluruh aplikasi: melayang, membulat, mengikuti warna aplikasi.
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: AppColors.textDark,
+          elevation: 6,
+          insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          contentTextStyle: const TextStyle(
+            fontFamily: 'Poppins',
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          actionTextColor: AppColors.navActive,
+        ),
       );
 }

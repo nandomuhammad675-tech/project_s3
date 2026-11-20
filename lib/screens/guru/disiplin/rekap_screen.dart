@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_disiplin_model.dart';
 import 'package:si_kesa/screens/guru/disiplin/form_screen.dart';
@@ -65,9 +66,7 @@ class _RekapDisiplinGuruScreenState extends State<RekapDisiplinGuruScreen> {
       MaterialPageRoute(builder: (_) => DisiplinGuruScreen(catatan: c)),
     );
     if (hasil == true && mounted) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('Catatan diperbarui.')));
+      tampilkanNotifikasi(context, 'Catatan diperbarui.', jenis: JenisNotifikasi.berhasil);
       await _muat(senyap: true);
     }
   }
@@ -112,18 +111,16 @@ class _RekapDisiplinGuruScreenState extends State<RekapDisiplinGuruScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.fromLTRB(20, tinggiHeader + 24, 20, 24),
         children: [
-          const Text(
-            'Rekap Kedisiplinan Siswa',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.headerGreen,
-            ),
-          ),
-          const SizedBox(height: 20),
           if (_opsiSiswa.isNotEmpty) _filter(),
-          const SizedBox(height: 8),
+          if (tampil.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 14, left: 2),
+              child: Text(
+                '${tampil.length} catatan',
+                style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
+              ),
+            ),
+          const SizedBox(height: 4),
           if (tampil.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 48),
@@ -172,18 +169,20 @@ class _RekapDisiplinGuruScreenState extends State<RekapDisiplinGuruScreen> {
   Widget _item(CatatanDisiplinModel c) {
     return Container(
       margin: const EdgeInsets.only(top: 12),
-      child: Material(
+      decoration: BoxDecoration(
         color: AppColors.white,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+        boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 6, offset: Offset(0, 2))],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
           onTap: () => _ubah(c),
-          child: Container(
+          child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
-            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -191,41 +190,63 @@ class _RekapDisiplinGuruScreenState extends State<RekapDisiplinGuruScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Nama siswa: paling menonjol
                       Text(
                         c.namaSiswa,
                         style: const TextStyle(
                           fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textHint,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        c.jenisPelanggaran,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
+                          fontWeight: FontWeight.w700,
                           color: AppColors.textDark,
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      // Jenis pelanggaran sebagai label berwarna
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentRed.withValues(alpha: 0.10),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          c.jenisPelanggaran,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.accentRed,
+                          ),
+                        ),
+                      ),
                       if (c.catatan.isNotEmpty) ...[
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 8),
                         Text(
                           c.catatan,
-                          style: const TextStyle(fontSize: 13, color: AppColors.textDark),
+                          style: const TextStyle(fontSize: 13, height: 1.35, color: AppColors.textDark),
                         ),
                       ],
-                      const SizedBox(height: 6),
-                      Text(
-                        DateFormatter.lengkap(c.tanggal),
-                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.textMuted),
+                          const SizedBox(width: 5),
+                          Text(
+                            DateFormatter.lengkap(c.tanggal),
+                            style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: Icon(Icons.edit_outlined, size: 20, color: AppColors.textDark),
+                TextButton.icon(
+                  onPressed: () => _ubah(c),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Ubah', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.headerGreen,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 32),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                 ),
               ],
             ),

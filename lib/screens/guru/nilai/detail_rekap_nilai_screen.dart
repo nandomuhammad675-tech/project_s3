@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_disiplin_model.dart';
 import 'package:si_kesa/models/kelas_model.dart';
@@ -28,6 +29,7 @@ class DetailRekapNilaiScreen extends StatefulWidget {
 class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
   static const _lebarKiri = 150.0;
   static const _lebarNilai = 56.0;
+  static const _garisSisi = BorderSide(color: AppColors.border, width: 1);
   static const _tinggiKepala = 44.0;
   static const _tinggiBaris = 60.0;
 
@@ -95,10 +97,8 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
     return maks;
   }
 
-  void _info(String pesan) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(pesan)));
+  void _info(String pesan, {JenisNotifikasi jenis = JenisNotifikasi.info}) {
+    tampilkanNotifikasi(context, pesan, jenis: jenis);
   }
 
   /// Unduh Excel nilai siswa ini (semua mapel), lalu buka menu Bagikan.
@@ -106,7 +106,7 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
     if (_mengunduh) return; // cegah ketukan ganda
     final kelas = widget.kelas;
     if (kelas.idTahunAjaran == 0) {
-      _info('Data kelas belum lengkap. Kembali ke daftar siswa lalu coba lagi.');
+      _info('Data kelas belum lengkap. Kembali ke daftar siswa lalu coba lagi.', jenis: JenisNotifikasi.peringatan);
       return;
     }
     setState(() => _mengunduh = true);
@@ -124,7 +124,7 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      _info(pesanDariError(e));
+      _info(pesanDariError(e), jenis: JenisNotifikasi.gagal);
     } finally {
       if (mounted) setState(() => _mengunduh = false);
     }
@@ -239,6 +239,7 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
         boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 2))],
       ),
       clipBehavior: Clip.antiAlias,
@@ -248,7 +249,7 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
           // Kiri (tetap): Mata Pelajaran
           Container(
             width: _lebarKiri,
-            decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFEFEBDD)))),
+            decoration: const BoxDecoration(border: Border(right: _garisSisi)),
             child: Column(
               children: [
                 _kepalaKiri(),
@@ -280,9 +281,12 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
   Widget _kepalaKiri() {
     return Container(
       height: _tinggiKepala,
-      color: AppColors.cardBeige,
       alignment: Alignment.centerLeft,
       padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: const BoxDecoration(
+        color: AppColors.cardBeige,
+        border: Border(bottom: _garisSisi),
+      ),
       child: const Text('Mata Pelajaran', style: _gayaKepala),
     );
   }
@@ -290,13 +294,22 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
   Widget _kepalaKanan(List<(String, String, int)> kolom) {
     return Container(
       height: _tinggiKepala,
-      color: AppColors.cardBeige,
+      decoration: const BoxDecoration(
+        color: AppColors.cardBeige,
+        border: Border(bottom: _garisSisi),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final k in kolom)
-            SizedBox(
+          for (var j = 0; j < kolom.length; j++)
+            Container(
               width: _lebarNilai,
-              child: Text(k.$1, textAlign: TextAlign.center, style: _gayaKepala),
+              alignment: Alignment.center,
+              // garis pemisah antar kolom (kolom terakhir tidak, sudah ada garis tepi luar)
+              decoration: BoxDecoration(
+                border: j == kolom.length - 1 ? null : const Border(right: _garisSisi),
+              ),
+              child: Text(kolom[j].$1, textAlign: TextAlign.center, style: _gayaKepala),
             ),
         ],
       ),
@@ -304,7 +317,7 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
   }
 
   BoxDecoration _garis(bool terakhir) => BoxDecoration(
-        border: terakhir ? null : const Border(bottom: BorderSide(color: Color(0xFFEFEBDD))),
+        border: terakhir ? null : const Border(bottom: _garisSisi),
       );
 
   Widget _barisKiri(MapelModel m, bool terakhir) {
@@ -332,11 +345,16 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
       height: _tinggiBaris,
       decoration: _garis(terakhir),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final k in kolom)
-            SizedBox(
+          for (var j = 0; j < kolom.length; j++)
+            Container(
               width: _lebarNilai,
-              child: Center(child: _sel(_peta['${m.id}|${k.$2}|${k.$3}'])),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: j == kolom.length - 1 ? null : const Border(right: _garisSisi),
+              ),
+              child: _sel(_peta['${m.id}|${kolom[j].$2}|${kolom[j].$3}']),
             ),
         ],
       ),

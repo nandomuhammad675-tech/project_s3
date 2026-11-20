@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/absensi_guru_model.dart';
 import 'package:si_kesa/models/absensi_model.dart';
@@ -166,7 +167,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
         if (_status[s.idSiswa] != null) s.idSiswa: _status[s.idSiswa]!,
     };
     if (isi.isEmpty) {
-      _pesan('Pilih status kehadiran siswa dulu.');
+      _pesan('Pilih status kehadiran siswa dulu.', jenis: JenisNotifikasi.peringatan);
       return;
     }
     final belum = _siswa.length - isi.length;
@@ -195,7 +196,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
       if (baru.isEmpty && koreksi.isEmpty) {
         if (!mounted) return;
         setState(() => _menyimpan = false);
-        _pesan('Tidak ada perubahan untuk disimpan.');
+        _pesan('Tidak ada perubahan untuk disimpan.', jenis: JenisNotifikasi.info);
         return;
       }
 
@@ -214,7 +215,7 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
         _menyimpan = false;
         _perluCekUlang = false;
       });
-      _pesan('Absensi tersimpan');
+      _pesan('Absensi tersimpan', jenis: JenisNotifikasi.berhasil);
     } on ApiException catch (e) {
       if (!mounted) return;
       final jaringan = e.statusCode == null || e.statusCode! >= 500;
@@ -224,21 +225,19 @@ class _AbsensiGuruScreenState extends State<AbsensiGuruScreen> {
         if (jaringan || e.statusCode == 409) _perluCekUlang = true;
       });
       // Isian tetap di layar. 409/422: pesan server apa adanya.
-      _pesan(jaringan ? 'Belum tersimpan. Periksa koneksi lalu coba lagi.' : e.message);
+      _pesan(jaringan ? 'Belum tersimpan. Periksa koneksi lalu coba lagi.' : e.message, jenis: JenisNotifikasi.gagal);
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _menyimpan = false;
         _perluCekUlang = true;
       });
-      _pesan('Belum tersimpan. Periksa koneksi lalu coba lagi.');
+      _pesan('Belum tersimpan. Periksa koneksi lalu coba lagi.', jenis: JenisNotifikasi.gagal);
     }
   }
 
-  void _pesan(String teks) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(teks)));
+  void _pesan(String teks, {JenisNotifikasi jenis = JenisNotifikasi.info}) {
+    tampilkanNotifikasi(context, teks, jenis: jenis);
   }
 
   int _hitung(StatusKehadiran st) =>

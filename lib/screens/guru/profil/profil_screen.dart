@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:si_kesa/config/api_config.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_model.dart';
@@ -7,6 +8,7 @@ import 'package:si_kesa/screens/guru/profil/ganti_password_screen.dart';
 import 'package:si_kesa/services/api_client.dart';
 import 'package:si_kesa/services/auth_service.dart';
 import 'package:si_kesa/services/guru_service.dart';
+import 'package:si_kesa/widgets/dialog_keluar.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
 import 'package:si_kesa/widgets/layar_berheader.dart';
@@ -28,23 +30,7 @@ class _ProfilGuruScreenState extends State<ProfilGuruScreen> {
   void _muatUlang() => setState(() => _profil = GuruService.me());
 
   Future<void> _keluar() async {
-    final yakin = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Keluar akun?'),
-        content: const Text('Anda harus masuk lagi untuk membuka aplikasi.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Keluar', style: TextStyle(color: Color(0xFFFF0000))),
-          ),
-        ],
-      ),
-    );
+    final yakin = await tampilkanDialogKeluar(context);
     if (yakin != true) return;
 
     await AuthService.keluar(); // hapus token tersimpan
@@ -60,9 +46,7 @@ class _ProfilGuruScreenState extends State<ProfilGuruScreen> {
       MaterialPageRoute(builder: (_) => const GantiPasswordScreen()),
     );
     if (berhasil == true && mounted) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('Kata sandi berhasil diganti.')));
+      tampilkanNotifikasi(context, 'Kata sandi berhasil diganti.', jenis: JenisNotifikasi.berhasil);
     }
   }
 
@@ -159,8 +143,22 @@ class _ProfilGuruScreenState extends State<ProfilGuruScreen> {
                       '**********',
                       onTap: _gantiSandi,
                       akhir: const Padding(
-                        padding: EdgeInsets.all(10),
-                        child: Icon(Icons.edit_outlined, size: 22, color: AppColors.textDark),
+                        padding: EdgeInsets.symmetric(horizontal: 10),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.edit_outlined, size: 18, color: AppColors.headerGreen),
+                            SizedBox(width: 5),
+                            Text(
+                              'Ganti',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.headerGreen,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),

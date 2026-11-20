@@ -1,8 +1,5 @@
-import 'dart:io';
-
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_disiplin_model.dart';
 import 'package:si_kesa/models/guru_model.dart';
@@ -13,13 +10,14 @@ import 'package:si_kesa/services/api_client.dart';
 import 'package:si_kesa/services/disiplin_service.dart';
 import 'package:si_kesa/services/guru_service.dart';
 import 'package:si_kesa/services/nilai_service.dart';
+import 'package:si_kesa/utils/berkas_helper.dart';
 import 'package:si_kesa/widgets/empty_state.dart';
 import 'package:si_kesa/widgets/error_state.dart';
 import 'package:si_kesa/widgets/layar_berheader.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
 
 /// Rekap Per Mapel (hanya baca): pilih mata pelajaran dan semester, lihat nilai UH, ASTS, ASAS semua siswa kelas.
-/// Tombol Unduh Laporan hanya tampilan (Laporan Excel tidak ada di aplikasi Guru, Dokumen 02 bagian 1.1).
+/// Tombol Unduh Laporan mengunduh Excel rekap mapel (HP: menu Bagikan, Web: langsung terunduh).
 class RekapPerMapelScreen extends StatefulWidget {
   const RekapPerMapelScreen({super.key});
 
@@ -30,6 +28,8 @@ class RekapPerMapelScreen extends StatefulWidget {
 class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
   static const _lebarKiri = 176.0;
   static const _lebarNilai = 58.0;
+  static const _lebarNo = 36.0;
+  static const _garisSisi = BorderSide(color: AppColors.border, width: 1);
   static const _tinggiKepala = 44.0;
   static const _tinggiBaris = 52.0;
 
@@ -149,7 +149,7 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
     final kelas = _kelas;
     final idMapel = _idMapel;
     if (kelas == null || idMapel == null || kelas.idTahunAjaran == 0) {
-      _info('Data kelas belum lengkap. Tarik layar ke bawah untuk memuat ulang.');
+      _info('Data kelas belum lengkap. Tarik layar ke bawah untuk memuat ulang.', jenis: JenisNotifikasi.peringatan);
       return;
     }
     setState(() => _mengunduh = true);
@@ -160,39 +160,20 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
         idMapel: idMapel,
       );
       final namaMapel = _mapel.where((m) => m.id == idMapel).map((m) => m.nama).firstOrNull ?? 'Mapel';
-      String aman(String s) => s.replaceAll(RegExp(r'[^A-Za-z0-9]+'), '-');
       final namaFile =
-          'Rekap-${aman(namaMapel)}-$_semester-${aman(kelas.tahunAjaran)}-${aman(kelas.nama)}.xlsx';
-
-      final dir = await getTemporaryDirectory();
-      final berkas = File('${dir.path}/$namaFile');
-      await berkas.writeAsBytes(bytes, flush: true);
+          'Rekap-${namaBerkasAman(namaMapel)}-$_semester-${namaBerkasAman(kelas.tahunAjaran)}-${namaBerkasAman(kelas.nama)}.xlsx';
       if (!mounted) return;
-
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [
-            XFile(
-              berkas.path,
-              mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-              name: namaFile,
-            ),
-          ],
-          subject: namaFile,
-        ),
-      );
+      await bagikanExcel(bytes, namaFile);
     } catch (e) {
       if (!mounted) return;
-      _info(pesanDariError(e));
+      _info(pesanDariError(e), jenis: JenisNotifikasi.gagal);
     } finally {
       if (mounted) setState(() => _mengunduh = false);
     }
   }
 
-  void _info(String pesan) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(pesan)));
+  void _info(String pesan, {JenisNotifikasi jenis = JenisNotifikasi.info}) {
+    tampilkanNotifikasi(context, pesan, jenis: jenis);
   }
   // ===================== Tampilan =====================
 
@@ -383,6 +364,7 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
       decoration: BoxDecoration(
         color: AppColors.white,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
         boxShadow: const [BoxShadow(color: Color(0x1A000000), blurRadius: 6, offset: Offset(0, 2))],
       ),
       clipBehavior: Clip.antiAlias,
@@ -392,7 +374,7 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
           // Kiri (tetap): No. dan Nama Siswa
           Container(
             width: _lebarKiri,
-            decoration: const BoxDecoration(border: Border(right: BorderSide(color: Color(0xFFEFEBDD)))),
+            decoration: const BoxDecoration(border: Border(right: _garisSisi)),
             child: Column(
               children: [
                 _kepalaKiri(),
@@ -424,12 +406,29 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
   Widget _kepalaKiri() {
     return Container(
       height: _tinggiKepala,
-      color: AppColors.cardBeige,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: const Row(
+      decoration: const BoxDecoration(
+        color: AppColors.cardBeige,
+        border: Border(bottom: _garisSisi),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(width: 32, child: Text('No.', style: _gayaKepala)),
-          Expanded(child: Text('Nama Siswa', style: _gayaKepala)),
+          Container(
+            width: _lebarNo,
+            padding: const EdgeInsets.only(left: 10),
+            alignment: Alignment.centerLeft,
+            decoration: const BoxDecoration(border: Border(right: _garisSisi)),
+            child: const Text('No.', style: _gayaKepala),
+          ),
+          const Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: 10),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Nama Siswa', style: _gayaKepala),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -438,13 +437,22 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
   Widget _kepalaKanan(List<(String, String, int)> kolom) {
     return Container(
       height: _tinggiKepala,
-      color: AppColors.cardBeige,
+      decoration: const BoxDecoration(
+        color: AppColors.cardBeige,
+        border: Border(bottom: _garisSisi),
+      ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final k in kolom)
-            SizedBox(
+          for (var j = 0; j < kolom.length; j++)
+            Container(
               width: _lebarNilai,
-              child: Text(k.$1, textAlign: TextAlign.center, style: _gayaKepala),
+              alignment: Alignment.center,
+              // garis pemisah antar kolom (kolom terakhir tidak, sudah ada garis tepi luar)
+              decoration: BoxDecoration(
+                border: j == kolom.length - 1 ? null : const Border(right: _garisSisi),
+              ),
+              child: Text(kolom[j].$1, textAlign: TextAlign.center, style: _gayaKepala),
             ),
         ],
       ),
@@ -452,29 +460,38 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
   }
 
   BoxDecoration _garis(bool terakhir) => BoxDecoration(
-        border: terakhir ? null : const Border(bottom: BorderSide(color: Color(0xFFEFEBDD))),
+        border: terakhir ? null : const Border(bottom: _garisSisi),
       );
 
   Widget _barisKiri(SiswaKelasModel s, int i, bool terakhir) {
     return Container(
       height: _tinggiBaris,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
       decoration: _garis(terakhir),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            width: 32,
+          Container(
+            width: _lebarNo,
+            padding: const EdgeInsets.only(left: 10),
+            alignment: Alignment.centerLeft,
+            decoration: const BoxDecoration(border: Border(right: _garisSisi)),
             child: Text(
               '${s.nomorAbsen ?? i + 1}.',
               style: const TextStyle(fontSize: 12, color: AppColors.textDark),
             ),
           ),
           Expanded(
-            child: Text(
-              s.nama,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark),
+            child: Padding(
+              padding: const EdgeInsets.only(left: 10, right: 6),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  s.nama,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                ),
+              ),
             ),
           ),
         ],
@@ -487,11 +504,16 @@ class _RekapPerMapelScreenState extends State<RekapPerMapelScreen> {
       height: _tinggiBaris,
       decoration: _garis(terakhir),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          for (final k in kolom)
-            SizedBox(
+          for (var j = 0; j < kolom.length; j++)
+            Container(
               width: _lebarNilai,
-              child: Center(child: _sel(_peta['${s.idSiswa}|${k.$2}|${k.$3}'])),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                border: j == kolom.length - 1 ? null : const Border(right: _garisSisi),
+              ),
+              child: _sel(_peta['${s.idSiswa}|${kolom[j].$2}|${kolom[j].$3}']),
             ),
         ],
       ),

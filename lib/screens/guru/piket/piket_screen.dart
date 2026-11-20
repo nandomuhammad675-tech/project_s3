@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_disiplin_model.dart';
 import 'package:si_kesa/models/piket_model.dart';
@@ -156,7 +157,7 @@ class _PiketGuruScreenState extends State<PiketGuruScreen> {
       }
       if (!mounted) return;
       _reset();
-      _tampilkanPesan(mengubah ? 'Jadwal piket diperbarui.' : 'Jadwal piket tersimpan.');
+      _tampilkanPesan(mengubah ? 'Jadwal piket diperbarui.' : 'Jadwal piket tersimpan.', jenis: JenisNotifikasi.berhasil);
       await _muat(senyap: true);
     } catch (e) {
       _gagal(e);
@@ -194,7 +195,7 @@ class _PiketGuruScreenState extends State<PiketGuruScreen> {
       await PiketService.hapus(piket.idPiket);
       if (!mounted) return;
       _reset();
-      _tampilkanPesan('Jadwal piket dihapus.');
+      _tampilkanPesan('Jadwal piket dihapus.', jenis: JenisNotifikasi.berhasil);
       await _muat(senyap: true);
     } catch (e) {
       _gagal(e);
@@ -218,10 +219,8 @@ class _PiketGuruScreenState extends State<PiketGuruScreen> {
     });
   }
 
-  void _tampilkanPesan(String teks) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(teks)));
+  void _tampilkanPesan(String teks, {JenisNotifikasi jenis = JenisNotifikasi.info}) {
+    tampilkanNotifikasi(context, teks, jenis: jenis);
   }
 
   // ===================== Tampilan =====================
@@ -447,15 +446,26 @@ class _PiketGuruScreenState extends State<PiketGuruScreen> {
               ),
             ],
           ),
-          if (mengubah)
-            Center(
-              child: TextButton.icon(
+          if (mengubah) ...[
+            const SizedBox(height: 16),
+            const Divider(height: 1, color: AppColors.border),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
                 onPressed: _menyimpan ? null : _hapus,
                 icon: const Icon(Icons.delete_outline, size: 20),
-                label: const Text('Hapus Jadwal'),
-                style: TextButton.styleFrom(foregroundColor: AppColors.accentRed),
+                label: const Text('Hapus Jadwal', style: TextStyle(fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.accentRed,
+                  backgroundColor: AppColors.accentRed.withValues(alpha: 0.06),
+                  side: BorderSide(color: AppColors.accentRed.withValues(alpha: 0.5)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                ),
               ),
             ),
+          ],
         ],
       ),
     );

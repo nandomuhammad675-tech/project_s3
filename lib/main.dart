@@ -4,6 +4,7 @@ import 'package:si_kesa/screens/auth/login_screen.dart';
 import 'package:si_kesa/screens/splash/splash_screen.dart';
 import 'package:si_kesa/services/api_client.dart';
 import 'package:si_kesa/services/auth_service.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 
 final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<ScaffoldMessengerState> _messengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -20,9 +21,14 @@ Future<void> _sesiBerakhir() async {
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );
-    _messengerKey.currentState?.showSnackBar(
-      const SnackBar(content: Text('Sesi berakhir. Silakan masuk lagi.')),
-    );
+    final messenger = _messengerKey.currentState;
+    if (messenger != null) {
+      tampilkanNotifikasiDi(
+        messenger,
+        'Sesi berakhir. Silakan masuk lagi.',
+        jenis: JenisNotifikasi.peringatan,
+      );
+    }
   } finally {
     _sesiBerakhirDiproses = false;
   }

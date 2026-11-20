@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:si_kesa/widgets/notifikasi.dart';
 import 'package:si_kesa/config/theme_config.dart';
 import 'package:si_kesa/models/guru_model.dart';
 import 'package:si_kesa/models/jadwal_model.dart';
@@ -159,10 +160,8 @@ class _JadwalMengajarGuruScreenState extends State<JadwalMengajarGuruScreen> {
     }
   }
 
-  void _info(String pesan) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(pesan)));
+  void _info(String pesan, {JenisNotifikasi jenis = JenisNotifikasi.info}) {
+    tampilkanNotifikasi(context, pesan, jenis: jenis);
   }
 
   String? _validasi() {
@@ -217,7 +216,7 @@ class _JadwalMengajarGuruScreenState extends State<JadwalMengajarGuruScreen> {
       setState(() => _menyimpan = false);
       await _segarkanJadwal();
       if (!mounted) return;
-      _info(ubah ? 'Jadwal diperbarui' : 'Jadwal tersimpan');
+      _info(ubah ? 'Jadwal diperbarui' : 'Jadwal tersimpan', jenis: JenisNotifikasi.berhasil);
     } catch (e) {
       if (!mounted) return;
       // 409 (jam bentrok) dan 422 tampil apa adanya; isian tetap di layar.
@@ -251,7 +250,7 @@ class _JadwalMengajarGuruScreenState extends State<JadwalMengajarGuruScreen> {
       setState(() => _menyimpan = false);
       await _segarkanJadwal();
       if (!mounted) return;
-      _info('Jadwal dihapus');
+      _info('Jadwal dihapus', jenis: JenisNotifikasi.berhasil);
     } catch (e) {
       if (!mounted) return;
       setState(() {
