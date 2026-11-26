@@ -15,7 +15,7 @@ import 'package:si_kesa/widgets/layar_berheader.dart';
 import 'package:si_kesa/widgets/loading_indicator.dart';
 
 /// Rincian nilai satu siswa pada semester berjalan: satu tabel berisi semua mata pelajaran
-/// dengan kolom UH-1.., ASTS, dan ASAS. Hanya baca; tombol Expor mengunduh Excel nilai siswa ini.
+/// dengan kolom UH-1.., ASTS, dan ASAS. Hanya baca; tombol Unduh Laporan mengunduh Excel nilai siswa ini.
 class DetailRekapNilaiScreen extends StatefulWidget {
   final SiswaKelasModel siswa;
   final KelasModel kelas;
@@ -138,21 +138,30 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
   }
 
   Widget _isiLayar(double tinggiHeader) {
-    return RefreshIndicator(
-      color: AppColors.primary,
-      edgeOffset: tinggiHeader,
-      onRefresh: () => _muat(tarik: true),
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(16, tinggiHeader + 16, 16, 24),
-        children: [
-          _kartuSiswa(),
-          const SizedBox(height: 16),
-          _isiTabel(),
-          const SizedBox(height: 18),
-          _tombolExport(),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, box) {
+        // Tinggi area kosong di bawah header, supaya loading tepat di tengah layar.
+        final tengah = (box.maxHeight - tinggiHeader - 16 - 24).clamp(200.0, double.infinity).toDouble();
+
+        return RefreshIndicator(
+          color: AppColors.primary,
+          edgeOffset: tinggiHeader,
+          onRefresh: () => _muat(tarik: true),
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: EdgeInsets.fromLTRB(16, tinggiHeader + 16, 16, 24),
+            children: _memuat
+                ? [SizedBox(height: tengah, child: const LoadingIndicator())]
+                : [
+                    _kartuSiswa(),
+                    const SizedBox(height: 16),
+                    _isiTabel(),
+                    const SizedBox(height: 18),
+                    _tombolUnduh(),
+                  ],
+          ),
+        );
+      },
     );
   }
 
@@ -371,7 +380,7 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
     );
   }
 
-  Widget _tombolExport() {
+  Widget _tombolUnduh() {
     return Material(
       color: AppColors.headerGreen,
       borderRadius: BorderRadius.circular(28),
@@ -393,7 +402,7 @@ class _DetailRekapNilaiScreenState extends State<DetailRekapNilaiScreen> {
                     Icon(Icons.file_download_outlined, color: Colors.white, size: 22),
                     SizedBox(width: 8),
                     Text(
-                      'Expor Nilai Siswa',
+                      'Unduh Laporan',
                       style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
                     ),
                   ],

@@ -223,7 +223,7 @@ class _RiwayatAbsenGuruScreenState extends State<RiwayatAbsenGuruScreen> {
               children: [
                 Expanded(flex: 5, child: _kartuBulan()),
                 const SizedBox(width: 10),
-                Expanded(flex: 6, child: _tombolExport()),
+                Expanded(flex: 6, child: _tombolUnduh()),
               ],
             ),
           ),
@@ -293,8 +293,8 @@ class _RiwayatAbsenGuruScreenState extends State<RiwayatAbsenGuruScreen> {
     );
   }
 
-  /// Sesuai Dokumen 02 bagian 1.1, Laporan Excel tidak ada di aplikasi Guru; tombol hanya tampilan.
-  Widget _tombolExport() {
+  /// Tombol Unduh Laporan Absensi: mengunduh Excel absensi kelas sendiri.
+  Widget _tombolUnduh() {
     return Material(
       color: AppColors.primary,
       borderRadius: BorderRadius.circular(10),
@@ -319,7 +319,7 @@ class _RiwayatAbsenGuruScreenState extends State<RiwayatAbsenGuruScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Export Laporan Semester',
+                      'Unduh Laporan Absensi',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
